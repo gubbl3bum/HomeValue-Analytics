@@ -1,7 +1,6 @@
 import os
 import threading
 import webview
-import subprocess
 
 # Run strimlit
 def run_streamlit():
