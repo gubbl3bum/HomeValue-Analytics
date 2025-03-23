@@ -280,15 +280,6 @@ def display_filter_ui(df):
                 )
                 filters_applied = True
         
-        # Stosowanie filtrów dla brakujących wartości
-        if missing_value_filter['columns']:
-            filtered_data = filter_by_missing_values(
-                filtered_data,
-                missing_value_filter['columns'],
-                missing_value_filter['include_missing']
-            )
-            filters_applied = True
-        
         # Zapisanie przefiltrowanego dataframe w session state
         st.session_state.filtered_df = filtered_data
         st.session_state.filters_applied = filters_applied
