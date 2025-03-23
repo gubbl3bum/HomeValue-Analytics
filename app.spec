@@ -7,7 +7,7 @@ datas = collect_data_files('streamlit')
 block_cipher = None
 
 a = Analysis(
-    ['src/webview_app.py'],
+    ['src/app.py'],
     pathex=[],
     binaries=[],
     datas=datas,
