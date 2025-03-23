@@ -140,7 +140,6 @@ def display_filter_ui(df):
     # Pobieranie typów kolumn
     numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
     categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
-    all_cols = df.columns.tolist()
     
     # Tworzenie kontenerów dla różnych typów filtrów
     with st.expander("Filtry dla kolumn numerycznych", expanded=False):  # Zmiana na False

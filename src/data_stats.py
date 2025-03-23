@@ -1,7 +1,3 @@
-import pandas as pd
-import numpy as np
-import streamlit as st
-
 def compute_basic_statistics(df, columns):
     """
     Oblicza podstawowe statystyki dla wybranych kolumn numerycznych.

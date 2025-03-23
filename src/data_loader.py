@@ -22,7 +22,7 @@ def load_csv_file(uploaded_file):
         st.error(f"Błąd podczas wczytywania pliku: {e}")
         return None
 
-def preview_data(df, rows=5):
+def preview_data(df):
     """
     Wyświetla edytowalny podgląd danych.
     """

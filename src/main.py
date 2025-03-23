@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 from data_stats import compute_basic_statistics
 from data_loader import load_csv_file, preview_data, get_numeric_columns
 from data_visuals import display_chart_ui
