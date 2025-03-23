@@ -24,18 +24,26 @@ def load_csv_file(uploaded_file):
 
 def preview_data(df, rows=5):
     """
-    Wyświetla podgląd danych.
-    
-    Parameters:
-    -----------
-    df : pandas.DataFrame
-        DataFrame z danymi
-    rows : int, optional
-        Liczba wierszy do wyświetlenia (domyślnie 5)
+    Wyświetla edytowalny podgląd danych.
     """
     if df is not None:
-        st.write("Podgląd danych:")
-        st.dataframe(df.head(rows))
+        st.write("Podgląd danych (kliknij w komórkę aby edytować):")
+        
+        # Używamy data_editor zamiast dataframe
+        edited_df = st.data_editor(
+            df,
+            num_rows="dynamic",
+            use_container_width=True,
+            hide_index=False
+        )
+        
+        # Jeśli dane zostały zmienione, aktualizujemy DataFrame
+        if not edited_df.equals(df):
+            st.success("Dane zostały zaktualizowane!")
+            return edited_df
+        
+        return df
+    return None
 
 def get_numeric_columns(df):
     """

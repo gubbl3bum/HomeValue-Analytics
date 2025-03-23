@@ -67,35 +67,6 @@ def create_histogram(df, column, bins=30, title="Histogram"):
         st.error(f"Błąd podczas tworzenia histogramu: {e}")
         return None
 
-def create_box_plot(df, x_column, y_column=None, title="Wykres pudełkowy"):
-    """
-    Tworzy wykres pudełkowy (box plot) dla wybranych kolumn.
-    
-    Parameters:
-    -----------
-    df : pandas.DataFrame
-        DataFrame z danymi
-    x_column : str
-        Nazwa kolumny dla osi X (kategoryczna lub numeryczna)
-    y_column : str, optional
-        Nazwa kolumny dla osi Y (numeryczna)
-    title : str, optional
-        Tytuł wykresu
-        
-    Returns:
-    --------
-    fig : plotly.graph_objects.Figure
-        Obiekt wykresu plotly
-    """
-    try:
-        fig = px.box(df, x=x_column, y=y_column, 
-                     title=title,
-                     labels={x_column: x_column, y_column: y_column if y_column else ""})
-        return fig
-    except Exception as e:
-        st.error(f"Błąd podczas tworzenia wykresu pudełkowego: {e}")
-        return None
-
 def create_bar_chart(df, x_column, y_column, title="Wykres słupkowy"):
     """
     Tworzy wykres słupkowy dla wybranych kolumn.
@@ -268,16 +239,6 @@ def display_chart_ui(df):
         
         if st.button("Generuj histogram"):
             fig = create_histogram(df, col, bins)
-            if fig:
-                st.plotly_chart(fig, use_container_width=True)
-    
-    elif chart_type == "Wykres pudełkowy":
-        x_col = st.selectbox("Wybierz kolumnę dla osi X", all_cols)
-        y_col = st.selectbox("Wybierz kolumnę dla osi Y (opcjonalnie)", ["Brak"] + numeric_cols)
-        y_col = None if y_col == "Brak" else y_col
-        
-        if st.button("Generuj wykres pudełkowy"):
-            fig = create_box_plot(df, x_col, y_col)
             if fig:
                 st.plotly_chart(fig, use_container_width=True)
     

@@ -28,14 +28,20 @@ def compute_basic_statistics(df, columns):
         'min',
         'max',
         'median',
-        lambda x: x.skew(),  # skośność
-        lambda x: x.kurtosis()  # kurtoza
+        'skew',  # używamy nazw funkcji zamiast lambda
+        'kurt'   # używamy nazw funkcji zamiast lambda
     ]).round(2)
 
-    # Zmiana nazw dla lambda funkcji
+    # Tłumaczenie nazw statystyk na polski
     stats = stats.rename({
-        '<lambda_0>': 'skewness',
-        '<lambda_1>': 'kurtosis'
+        'count': 'Liczba obserwacji',
+        'mean': 'Średnia',
+        'std': 'Odchylenie standardowe',
+        'min': 'Minimum',
+        'max': 'Maksimum',
+        'median': 'Mediana',
+        'skew': 'Skośność',
+        'kurt': 'Kurtoza'
     })
 
     return stats
@@ -43,7 +49,6 @@ def compute_basic_statistics(df, columns):
 def compute_correlation_matrix(df, selected_columns):
     """
     Oblicza macierz korelacji między wybranymi kolumnami.
-    
     :param df: DataFrame z danymi
     :param selected_columns: Lista kolumn do analizy korelacji
     :return: DataFrame z macierzą korelacji
