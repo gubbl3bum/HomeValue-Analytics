@@ -20,7 +20,7 @@ def compute_basic_statistics(df, columns):
     """
     if not columns:
         return None
-        
+    
     stats = df[columns].agg([
         'count',
         'mean',
@@ -31,13 +31,13 @@ def compute_basic_statistics(df, columns):
         lambda x: x.skew(),  # skośność
         lambda x: x.kurtosis()  # kurtoza
     ]).round(2)
-    
+
     # Zmiana nazw dla lambda funkcji
     stats = stats.rename({
         '<lambda_0>': 'skewness',
         '<lambda_1>': 'kurtosis'
     })
-    
+
     return stats
 
 def compute_correlation_matrix(df, selected_columns):
@@ -50,7 +50,7 @@ def compute_correlation_matrix(df, selected_columns):
     """
     if not selected_columns or len(selected_columns) < 2:
         return None
-    
+
     return df[selected_columns].corr()
 
 def analyze_categorical_columns(df, categorical_columns):
@@ -63,15 +63,15 @@ def analyze_categorical_columns(df, categorical_columns):
     """
     if not categorical_columns:
         return None
-    
+
     results = {}
-    
+
     for col in categorical_columns:
         value_counts = df[col].value_counts().reset_index()
         value_counts.columns = [col, 'Count']
         value_counts['Percentage'] = (value_counts['Count'] / len(df)) * 100
         results[col] = value_counts
-    
+
     return results
 
 def analyze_price_per_sqm(df, price_column, area_column):
@@ -85,17 +85,17 @@ def analyze_price_per_sqm(df, price_column, area_column):
     """
     if price_column not in df.columns or area_column not in df.columns:
         return None
-    
+
     # Unikamy dzielenia przez zero
     valid_data = df[(df[area_column] > 0) & df[price_column].notna()]
-    
+
     if len(valid_data) == 0:
         return None
-    
+
     valid_data['price_per_sqm'] = valid_data[price_column] / valid_data[area_column]
-    
+
     stats = valid_data['price_per_sqm'].describe().to_frame().T
     stats['missing_values'] = len(df) - len(valid_data)
     stats['missing_percentage'] = (stats['missing_values'] / len(df)) * 100
-    
+
     return stats
