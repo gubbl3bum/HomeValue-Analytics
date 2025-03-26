@@ -8,7 +8,7 @@ import socket
 import logging
 from datetime import datetime
 
-# Konfiguracja logowania
+# Login configuration
 log_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
 log_file = os.path.join(log_dir, f"app_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt")
 
@@ -23,49 +23,49 @@ logging.basicConfig(
 
 logger = logging.getLogger('DataAnalysisApp')
 
-# Funkcja do sprawdzenia, czy port jest używany
+# Function to check if the port is in use
 def is_port_in_use(port):
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         return s.connect_ex(('localhost', port)) == 0
 
 # Funkcja do znalezienia wolnego portu
 def find_free_port():
-    port = 8501  # Domyślny port Streamlita
+    port = 8501  # Streamlite default port
     while is_port_in_use(port):
         port += 1
     return port
 
-# Określenie katalogów - uwaga: poprawiona logika ścieżek!
+# Defining directories 
 if getattr(sys, 'frozen', False):
-    # Jeśli aplikacja jest spakowana przez PyInstaller
+    # If the app is packaged by PyInstaller
     app_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     base_dir = sys._MEIPASS
-    # W trybie PyInstaller, main.py powinien być w spakowanym folderze 'src'
+# In PyInstaller mode, main.py should be in the zipped 'src' folder
     main_path = os.path.join(base_dir, 'src', 'main.py')
     logger.info(f"Tryb PyInstaller: app_dir: {app_dir}, base_dir: {base_dir}")
 else:
-    # W trybie deweloperskim
+    # In development mode
     app_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = app_dir
-    # W trybie deweloperskim, jesteśmy już w katalogu 'src', więc main.py jest bezpośrednio
+    # In development mode, we are already in the 'src' directory, so main.py is directly
     main_path = os.path.join(app_dir, 'main.py')
     logger.info(f"Tryb deweloperski: app_dir: {app_dir}")
 
 logger.info(f"Ścieżka do main.py: {main_path}")
 
-# Sprawdź, czy plik main.py istnieje
+# Check if the main.py file exists
 if not os.path.exists(main_path):
     logger.error(f"BŁĄD: Plik główny {main_path} nie istnieje!")
-    # Sprawdzenie zawartości katalogów
+    # Checking the contents of directories
     logger.info(f"Zawartość katalogu app_dir ({app_dir}): {os.listdir(app_dir)}")
     if os.path.exists(os.path.join(app_dir, 'src')):
         logger.info(f"Zawartość katalogu src: {os.listdir(os.path.join(app_dir, 'src'))}")
 
-# Znajdź wolny port dla Streamlita
+# Find a free port for Streamlit
 port = find_free_port()
 logger.info(f"Wybrany port dla Streamlita: {port}")
 
-# Uruchom Streamlit
+# Launch Streamlit
 def run_streamlit():
     try:
         if not os.path.exists(main_path):
@@ -73,7 +73,7 @@ def run_streamlit():
             return None
         
         if getattr(sys, 'frozen', False):
-            # W trybie PyInstaller
+            # In PyInstaller mode
             cmd = [
                 sys.executable, 
                 "-m", "streamlit", 
@@ -84,7 +84,7 @@ def run_streamlit():
             ]
             logger.info(f"Komenda Streamlit (PyInstaller): {' '.join(cmd)}")
         else:
-            # W trybie deweloperskim
+            # In development mode
             streamlit_cmd = os.path.join(".venv", "Scripts", "streamlit.cmd")
             cmd = [
                 streamlit_cmd,
@@ -95,7 +95,7 @@ def run_streamlit():
             ]
             logger.info(f"Komenda Streamlit (dev): {' '.join(cmd)}")
         
-        # Użyj subprocess zamiast os.system
+        # Use subprocess instead of os.system
         process = subprocess.Popen(
             cmd, 
             stdout=subprocess.PIPE,
@@ -104,7 +104,7 @@ def run_streamlit():
             encoding='utf-8'
         )
         
-        # Logowanie wyjścia Streamlita
+        # Streamlite output logging
         def log_output(stream, level_func):
             for line in stream:
                 level_func(f"STREAMLIT: {line.strip()}")
@@ -118,7 +118,7 @@ def run_streamlit():
         logger.error(f"Błąd podczas uruchamiania Streamlit: {str(e)}", exc_info=True)
         return None
 
-# Uruchom Streamlit w osobnym wątku
+# Run Streamlit in a separate thread
 streamlit_process = None
 def start_streamlit():
     global streamlit_process
@@ -131,7 +131,7 @@ thread = threading.Thread(target=start_streamlit, daemon=True)
 thread.start()
 logger.info("Uruchomiono wątek Streamlit")
 
-# Czekaj, aż Streamlit się uruchomi
+# Wait for Streamlit to start
 def wait_for_streamlit():
     logger.info("Oczekiwanie na uruchomienie serwera Streamlit...")
     max_attempts = 30
@@ -153,12 +153,12 @@ if not wait_for_streamlit():
     sys.exit(1)
 
 try:
-    # Utwórz okno aplikacji
+    # Create application window
     logger.info(f"Tworzenie okna PyWebView dla adresu http://localhost:{port}")
     window = webview.create_window("HomeValue-Analytics", f"http://localhost:{port}")
     logger.info("Okno PyWebView utworzone")
 
-    # Zamknij proces Streamlita po zamknięciu okna
+    # Close Streamlit process after closing window
     def on_closed():
         global streamlit_process
         logger.info("Zamykanie okna aplikacji")
@@ -168,7 +168,7 @@ try:
 
     window.events.closed += on_closed
 
-    # Uruchom aplikację
+    # Run the application
     logger.info("Uruchamianie PyWebView")
     webview.start()
     logger.info("PyWebView zakończył działanie")
