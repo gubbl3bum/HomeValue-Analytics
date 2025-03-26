@@ -1,178 +1,67 @@
 import os
-import sys
-import subprocess
-import threading
 import time
+import threading
 import webview
-import socket
+import subprocess
 import logging
+import requests
 from datetime import datetime
 
-# Konfiguracja logowania
-log_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-log_file = os.path.join(log_dir, f"app_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt")
+# Create a directory for logs
+LOG_DIR = "logs"
+os.makedirs(LOG_DIR, exist_ok=True)
 
+# Generate a dynamic log file name
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+LOG_FILE = os.path.join(LOG_DIR, f"HomeValue-Analytics_{timestamp}.log")
+
+# Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
-        logging.FileHandler(log_file, encoding='utf-8'),
-        logging.StreamHandler()
+        logging.FileHandler(LOG_FILE, mode="w"),  # Log to file
+        logging.StreamHandler()  # Log to console
     ]
 )
 
-logger = logging.getLogger('DataAnalysisApp')
+# Streamlit server configuration
+STREAMLIT_PORT = 8501
+STREAMLIT_URL = f"http://localhost:{STREAMLIT_PORT}"
 
-# Funkcja do sprawdzenia, czy port jest używany
-def is_port_in_use(port):
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) == 0
-
-# Funkcja do znalezienia wolnego portu
-def find_free_port():
-    port = 8501  # Domyślny port Streamlita
-    while is_port_in_use(port):
-        port += 1
-    return port
-
-# Określenie katalogów - uwaga: poprawiona logika ścieżek!
-if getattr(sys, 'frozen', False):
-    # Jeśli aplikacja jest spakowana przez PyInstaller
-    app_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    base_dir = sys._MEIPASS
-    # W trybie PyInstaller, main.py powinien być w spakowanym folderze 'src'
-    main_path = os.path.join(base_dir, 'src', 'main.py')
-    logger.info(f"Tryb PyInstaller: app_dir: {app_dir}, base_dir: {base_dir}")
-else:
-    # W trybie deweloperskim
-    app_dir = os.path.dirname(os.path.abspath(__file__))
-    base_dir = app_dir
-    # W trybie deweloperskim, jesteśmy już w katalogu 'src', więc main.py jest bezpośrednio
-    main_path = os.path.join(app_dir, 'main.py')
-    logger.info(f"Tryb deweloperski: app_dir: {app_dir}")
-
-logger.info(f"Ścieżka do main.py: {main_path}")
-
-# Sprawdź, czy plik main.py istnieje
-if not os.path.exists(main_path):
-    logger.error(f"BŁĄD: Plik główny {main_path} nie istnieje!")
-    # Sprawdzenie zawartości katalogów
-    logger.info(f"Zawartość katalogu app_dir ({app_dir}): {os.listdir(app_dir)}")
-    if os.path.exists(os.path.join(app_dir, 'src')):
-        logger.info(f"Zawartość katalogu src: {os.listdir(os.path.join(app_dir, 'src'))}")
-
-# Znajdź wolny port dla Streamlita
-port = find_free_port()
-logger.info(f"Wybrany port dla Streamlita: {port}")
-
-# Uruchom Streamlit
+# Function to start the Streamlit server in a separate thread
 def run_streamlit():
-    try:
-        if not os.path.exists(main_path):
-            logger.error(f"BŁĄD: Nie można uruchomić Streamlita - plik {main_path} nie istnieje!")
-            return None
-        
-        if getattr(sys, 'frozen', False):
-            # W trybie PyInstaller
-            cmd = [
-                sys.executable, 
-                "-m", "streamlit", 
-                "run", 
-                main_path,
-                "--server.headless", "true",
-                "--server.port", str(port)
-            ]
-            logger.info(f"Komenda Streamlit (PyInstaller): {' '.join(cmd)}")
-        else:
-            # W trybie deweloperskim
-            streamlit_cmd = os.path.join(".venv", "Scripts", "streamlit.cmd")
-            cmd = [
-                streamlit_cmd,
-                "run",
-                main_path,
-                "--server.headless", "true",
-                "--server.port", str(port)
-            ]
-            logger.info(f"Komenda Streamlit (dev): {' '.join(cmd)}")
-        
-        # Użyj subprocess zamiast os.system
-        process = subprocess.Popen(
-            cmd, 
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            encoding='utf-8'
-        )
-        
-        # Logowanie wyjścia Streamlita
-        def log_output(stream, level_func):
-            for line in stream:
-                level_func(f"STREAMLIT: {line.strip()}")
-        
-        threading.Thread(target=log_output, args=(process.stdout, logger.info), daemon=True).start()
-        threading.Thread(target=log_output, args=(process.stderr, logger.error), daemon=True).start()
-        
-        logger.info("Proces Streamlit uruchomiony")
-        return process
-    except Exception as e:
-        logger.error(f"Błąd podczas uruchamiania Streamlit: {str(e)}", exc_info=True)
-        return None
+    logging.info("Starting Streamlit server...")
+    cmd = ["streamlit", "run", "src/main.py", "--server.port", str(STREAMLIT_PORT), "--server.headless", "true"]
+    process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-# Uruchom Streamlit w osobnym wątku
-streamlit_process = None
-def start_streamlit():
-    global streamlit_process
-    logger.info("Rozpoczynam uruchamianie Streamlit")
-    streamlit_process = run_streamlit()
-    if not streamlit_process:
-        logger.error("Nie udało się uruchomić procesu Streamlit")
+    # Capture Streamlit logs
+    for line in process.stdout:
+        logging.info(f"STREAMLIT: {line.strip()}")  # Log Streamlit output
 
-thread = threading.Thread(target=start_streamlit, daemon=True)
-thread.start()
-logger.info("Uruchomiono wątek Streamlit")
+# Start Streamlit in a separate daemon thread
+threading.Thread(target=run_streamlit, daemon=True).start()
 
-# Czekaj, aż Streamlit się uruchomi
-def wait_for_streamlit():
-    logger.info("Oczekiwanie na uruchomienie serwera Streamlit...")
-    max_attempts = 30
-    attempts = 0
-    while attempts < max_attempts:
-        if is_port_in_use(port):
-            logger.info(f"Serwer Streamlit działa na porcie {port} (próba {attempts+1})")
-            return True
-        logger.info(f"Czekam na serwer Streamlit (próba {attempts+1}/{max_attempts})")
-        time.sleep(1)
-        attempts += 1
-    logger.error(f"Serwer Streamlit nie uruchomił się po {max_attempts} próbach")
+# Function to wait for the Streamlit server to become available
+def wait_for_streamlit(max_retries=10, delay=1):
+    logging.info("Waiting for Streamlit server to start...")
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(STREAMLIT_URL)
+            if response.status_code == 200:
+                logging.info("Streamlit server is ready!")
+                return True
+        except requests.ConnectionError:
+            logging.warning(f"Attempt {attempt + 1}/{max_retries}: Streamlit is not available yet...")
+        time.sleep(delay)
+    
+    logging.error("Failed to connect to Streamlit server after 10 attempts!")
     return False
 
-if not wait_for_streamlit():
-    logger.error("Nie udało się uruchomić Streamlita - kończę aplikację")
-    if streamlit_process:
-        streamlit_process.terminate()
-    sys.exit(1)
-
-try:
-    # Utwórz okno aplikacji
-    logger.info(f"Tworzenie okna PyWebView dla adresu http://localhost:{port}")
-    window = webview.create_window("HomeValue-Analytics", f"http://localhost:{port}")
-    logger.info("Okno PyWebView utworzone")
-
-    # Zamknij proces Streamlita po zamknięciu okna
-    def on_closed():
-        global streamlit_process
-        logger.info("Zamykanie okna aplikacji")
-        if streamlit_process:
-            logger.info("Kończenie procesu Streamlit")
-            streamlit_process.terminate()
-
-    window.events.closed += on_closed
-
-    # Uruchom aplikację
-    logger.info("Uruchamianie PyWebView")
+# Wait for Streamlit to start before launching PyWebView
+if wait_for_streamlit():
+    logging.info(f"Launching PyWebView with URL: {STREAMLIT_URL}")
+    webview.create_window("HomeValue-Analytics", STREAMLIT_URL)
     webview.start()
-    logger.info("PyWebView zakończył działanie")
-except Exception as e:
-    logger.error(f"Błąd podczas tworzenia okna PyWebView: {str(e)}", exc_info=True)
-    if streamlit_process:
-        streamlit_process.terminate()
+else:
+    logging.error("Error: Cannot start PyWebView because Streamlit is not running!")

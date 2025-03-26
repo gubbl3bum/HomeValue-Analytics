@@ -65,7 +65,7 @@ exe = EXE(
     a.datas,
     [],
     name="HomeValue-Analytics",
-    debug=True,  # Changed to True for better error reporting
+    debug=False,  # Changed to True for better error reporting
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
