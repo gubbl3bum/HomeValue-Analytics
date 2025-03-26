@@ -81,7 +81,7 @@ streamlit run src/main.py --server.enableStaticServing true  # debug mode
 ### Build Desktop Application
 
 ```shell
-cd ~/HomeValue-Analytics          # go to project root
+cd ~/HomeValue-Analytics         # go to project root
 pyinstaller app.spec             # create executable
 ```
 
@@ -89,7 +89,7 @@ pyinstaller app.spec             # create executable
 
 ```shell
 cd dist/                         # go to distribution directory
-DataAnalysisApp.exe             # run the application
+HomeValue-Analytics.exe          # run the application
 ```
 
 ## Usage Guide

@@ -64,7 +64,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name="DataAnalysisApp",
+    name="HomeValue-Analytics",
     debug=True,  # Changed to True for better error reporting
     bootloader_ignore_signals=False,
     strip=False,
