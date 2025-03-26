@@ -14,28 +14,28 @@ from sklearn.pipeline import Pipeline
 
 def prepare_data_for_ml(df, features, target=None, test_size=0.2, random_state=42):
     """
-    Przygotowuje dane do modelowania.
-    
+    Prepares data for modeling.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    DataFrame with data
     features : list
-        Lista kolumn do wykorzystania jako cechy
+    List of columns to use as features
     target : str, optional
-        Nazwa kolumny docelowej (dla uczenia nadzorowanego)
+    Name of target column (for supervised learning)
     test_size : float, optional
-        Proporcja podziału na zbiór testowy (0.0-1.0)
+    Test set split ratio (0.0-1.0)
     random_state : int, optional
-        Ziarno losowości dla powtarzalności wyników
-        
+    Randomness seed for repeatability of results
+
     Returns:
     --------
     dict
-        Słownik zawierający przygotowane dane
+    Dictionary containing prepared data
     """
     try:
-        # Usuwamy wiersze z brakującymi wartościami
+        # Deleting rows with missing values
         df_cleaned = df[features + ([target] if target else [])].dropna()
         
         if df_cleaned.shape[0] == 0:
@@ -43,11 +43,11 @@ def prepare_data_for_ml(df, features, target=None, test_size=0.2, random_state=4
             return None
             
         if target:
-            # Uczenie nadzorowane
+            # Supervised learning
             X = df_cleaned[features]
             y = df_cleaned[target]
             
-            # Podział na zbiór treningowy i testowy
+            # Division into training and test sets
             X_train, X_test, y_train, y_test = train_test_split(
                 X, y, test_size=test_size, random_state=random_state
             )
@@ -61,7 +61,7 @@ def prepare_data_for_ml(df, features, target=None, test_size=0.2, random_state=4
                 'target': target
             }
         else:
-            # Uczenie nienadzorowane
+            # Unsupervised learning
             X = df_cleaned[features]
             return {
                 'X': X,
@@ -73,21 +73,21 @@ def prepare_data_for_ml(df, features, target=None, test_size=0.2, random_state=4
 
 def perform_clustering(data, n_clusters=3, random_state=42):
     """
-    Wykonuje grupowanie metodą K-średnich.
-    
+    Performs K-means clustering.
+
     Parameters:
     -----------
     data : dict
-        Słownik z danymi przygotowanymi przez prepare_data_for_ml
+    Dictionary with data prepared by prepare_data_for_ml
     n_clusters : int, optional
-        Liczba klastrów
+    Number of clusters
     random_state : int, optional
-        Ziarno losowości dla powtarzalności wyników
-        
+    Randomness seed for repeatability of results
+
     Returns:
     --------
     dict
-        Słownik zawierający wyniki grupowania
+    Dictionary containing clustering results
     """
     try:
         if data is None:
@@ -96,26 +96,26 @@ def perform_clustering(data, n_clusters=3, random_state=42):
         X = data['X']
         features = data['features']
         
-        # Skalowanie danych
+        # Data scaling
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
         
-        # Grupowanie
+        # Grouping
         kmeans = KMeans(n_clusters=n_clusters, random_state=random_state)
         clusters = kmeans.fit_predict(X_scaled)
         
-        # Dodajemy klastry do oryginalnych danych
+        # Adding clusters to the original data
         X_with_clusters = X.copy()
         X_with_clusters['cluster'] = clusters
         
-        # Redukcja wymiarowości do wizualizacji (jeśli więcej niż 2 cechy)
+        # Dimensionality reduction for visualization (if more than 2 features)
         if len(features) > 2:
             pca = PCA(n_components=2)
             X_pca = pca.fit_transform(X_scaled)
             X_pca_df = pd.DataFrame(X_pca, columns=['PC1', 'PC2'])
             X_pca_df['cluster'] = clusters
             
-            # Tworzymy wykres PCA
+            # Create a PCA chart
             fig_pca = px.scatter(
                 X_pca_df, 
                 x='PC1', 
@@ -125,7 +125,7 @@ def perform_clustering(data, n_clusters=3, random_state=42):
                 labels={'cluster': 'Klaster'}
             )
         else:
-            # Tworzymy wykres bezpośrednio na oryginalnych cechach
+            # Creating a graph directly on the original features
             fig_pca = px.scatter(
                 X_with_clusters, 
                 x=features[0], 
@@ -135,7 +135,7 @@ def perform_clustering(data, n_clusters=3, random_state=42):
                 labels={'cluster': 'Klaster'}
             )
         
-        # Analiza klastrów - średnie wartości cech w każdym klastrze
+        # Cluster analysis - average feature values ​​in each cluster
         cluster_analysis = X_with_clusters.groupby('cluster').mean()
         
         return {
@@ -153,19 +153,19 @@ def perform_clustering(data, n_clusters=3, random_state=42):
 
 def train_regression_model(data, model_type='linear'):
     """
-    Trenuje model regresji.
-    
+    Trains a regression model.
+
     Parameters:
     -----------
     data : dict
-        Słownik z danymi przygotowanymi przez prepare_data_for_ml
+    A dictionary containing data prepared by prepare_data_for_ml
     model_type : str, optional
-        Typ modelu ('linear' lub 'random_forest')
-        
+    The model type ('linear' or 'random_forest')
+
     Returns:
     --------
     dict
-        Słownik zawierający wyniki trenowania modelu
+    A dictionary containing the results of training the model
     """
     try:
         if data is None:
@@ -176,7 +176,7 @@ def train_regression_model(data, model_type='linear'):
         X_test = data['X_test']
         y_test = data['y_test']
         
-        # Wybór modelu
+        # Model selection
         if model_type == 'linear':
             model = LinearRegression()
             model_name = "Regresja liniowa"
@@ -184,18 +184,18 @@ def train_regression_model(data, model_type='linear'):
             model = RandomForestRegressor(n_estimators=100, random_state=42)
             model_name = "Las losowy"
         
-        # Trenowanie modelu
+        # Model training
         model.fit(X_train, y_train)
         
-        # Predykcja
+        # Prediction
         y_pred = model.predict(X_test)
         
-        # Ocena modelu
+        # Model evaluation
         mse = mean_squared_error(y_test, y_pred)
         rmse = np.sqrt(mse)
         r2 = r2_score(y_test, y_pred)
         
-        # Wizualizacja predykcji vs rzeczywiste wartości
+        # Visualization of predictions vs. actual values
         results_df = pd.DataFrame({
             'Rzeczywiste': y_test,
             'Predykcja': y_pred
@@ -212,7 +212,7 @@ def train_regression_model(data, model_type='linear'):
             }
         )
         
-        # Dodanie linii y=x (idealna predykcja)
+        # Adding the line y=x (perfect prediction)
         fig.add_shape(
             type='line',
             x0=results_df['Rzeczywiste'].min(),
@@ -222,7 +222,7 @@ def train_regression_model(data, model_type='linear'):
             line=dict(color='red', dash='dash')
         )
         
-        # Ważność cech (tylko dla modelu RandomForest)
+        # Feature Importance (RandomForest model only)
         if model_type == 'random_forest':
             feature_importance = pd.DataFrame({
                 'Feature': data['features'],
@@ -265,19 +265,19 @@ def train_regression_model(data, model_type='linear'):
 
 def train_classification_model(data, model_type='logistic'):
     """
-    Trenuje model klasyfikacji.
-    
+    Trains a classification model.
+
     Parameters:
     -----------
     data : dict
-        Słownik z danymi przygotowanymi przez prepare_data_for_ml
+    A dictionary containing data prepared by prepare_data_for_ml
     model_type : str, optional
-        Typ modelu ('logistic' lub 'random_forest')
-        
+    The model type ('logistic' or 'random_forest')
+
     Returns:
     --------
     dict
-        Słownik zawierający wyniki trenowania modelu
+    A dictionary containing the results of training the model
     """
     try:
         if data is None:
@@ -288,13 +288,13 @@ def train_classification_model(data, model_type='logistic'):
         X_test = data['X_test']
         y_test = data['y_test']
         
-        # Sprawdzenie, czy zmienna docelowa jest kategoryczna (niezbędne dla klasyfikacji)
+        # Checking if the target variable is categorical (necessary for classification)
         if not pd.api.types.is_categorical_dtype(y_train) and not pd.api.types.is_object_dtype(y_train):
             if y_train.nunique() > 10:
                 st.error("Wybrana kolumna docelowa ma zbyt wiele unikalnych wartości dla klasyfikacji.")
                 return None
         
-        # Wybór modelu
+        # Model selection
         if model_type == 'logistic':
             model = LogisticRegression(max_iter=1000, random_state=42)
             model_name = "Regresja logistyczna"
@@ -302,17 +302,17 @@ def train_classification_model(data, model_type='logistic'):
             model = RandomForestClassifier(n_estimators=100, random_state=42)
             model_name = "Las losowy"
         
-        # Trenowanie modelu
+        # Model training
         model.fit(X_train, y_train)
         
-        # Predykcja
+        # Prediction
         y_pred = model.predict(X_test)
         
-        # Ocena modelu
+        # Model evaluation
         accuracy = accuracy_score(y_test, y_pred)
         report = classification_report(y_test, y_pred, output_dict=True)
         
-        # Ważność cech (tylko dla modelu RandomForest)
+        # Feature Importance (RandomForest model only)
         if model_type == 'random_forest':
             feature_importance = pd.DataFrame({
                 'Feature': data['features'],
@@ -356,12 +356,12 @@ def train_classification_model(data, model_type='logistic'):
 
 def display_ml_ui(df):
     """
-    Wyświetla interfejs użytkownika do analizy machine learning.
-    
+    Displays a user interface for machine learning analysis.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    DataFrame with data
     """
     st.subheader("Analiza Machine Learning 🤖")
     
@@ -369,7 +369,7 @@ def display_ml_ui(df):
         st.warning("Brak danych do analizy ML. Najpierw wczytaj plik CSV.")
         return
     
-    # Pobieranie typów kolumn
+    # Getting column types
     numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
     categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
     all_cols = df.columns.tolist()
@@ -378,7 +378,7 @@ def display_ml_ui(df):
         st.warning("Brak kolumn numerycznych do analizy ML.")
         return
     
-    # Wybór typu analizy ML
+    # Selecting the type of ML analysis
     ml_type = st.radio(
         "Wybierz typ analizy", 
         ["Grupowanie (K-means)", "Regresja", "Klasyfikacja"]
@@ -387,58 +387,58 @@ def display_ml_ui(df):
     if ml_type == "Grupowanie (K-means)":
         st.subheader("Grupowanie K-means")
         
-        # Wybór cech
+        # Feature selection
         selected_features = st.multiselect(
             "Wybierz cechy do grupowania", 
             numeric_cols, 
             default=numeric_cols[:min(3, len(numeric_cols))]
         )
         
-        # Liczba klastrów
+        # Number of clusters
         n_clusters = st.slider("Liczba klastrów", min_value=2, max_value=10, value=3)
         
         if len(selected_features) < 1:
             st.warning("Wybierz co najmniej jedną cechę.")
         elif st.button("Wykonaj grupowanie"):
             with st.spinner("Grupowanie danych..."):
-                # Przygotowanie danych
+                # Data preparation
                 data = prepare_data_for_ml(df, features=selected_features)
                 
-                # Wykonanie grupowania
+                # Perform grouping
                 clustering_results = perform_clustering(data, n_clusters=n_clusters)
                 
                 if clustering_results:
-                    # Wyświetlenie wyników
+                    # Display the results
                     st.success(f"Grupowanie zakończone - utworzono {n_clusters} klastrów")
                     
-                    # Wykres klastrów
+                    # Cluster chart
                     st.plotly_chart(clustering_results['pca_plot'], use_container_width=True)
                     
-                    # Analiza klastrów
+                    # Cluster analysis
                     st.subheader("Charakterystyka klastrów")
                     st.dataframe(clustering_results['cluster_analysis'])
                     
-                    # Dodanie klastrów do oryginalnych danych
+                    # Adding clusters to the original data
                     st.subheader("Dane z przypisanymi klastrami")
                     st.dataframe(clustering_results['X_with_clusters'])
     
     elif ml_type == "Regresja":
         st.subheader("Regresja")
         
-        # Wybór cech
+        # Feature selection
         selected_features = st.multiselect(
             "Wybierz cechy (zmienne niezależne)", 
             numeric_cols, 
             default=numeric_cols[:min(3, len(numeric_cols))]
         )
         
-        # Wybór zmiennej docelowej
+        # Selecting the target variable
         target_col = st.selectbox(
             "Wybierz zmienną docelową (do przewidywania)", 
             [col for col in numeric_cols if col not in selected_features]
         ) if len(numeric_cols) > len(selected_features) else None
         
-        # Wybór modelu
+        # Model selection
         model_type = st.radio("Wybierz typ modelu", ["Regresja liniowa", "Las losowy"])
         
         if not target_col:
@@ -447,24 +447,24 @@ def display_ml_ui(df):
             st.warning("Wybierz co najmniej jedną cechę.")
         elif st.button("Trenuj model"):
             with st.spinner("Trenowanie modelu regresji..."):
-                # Przygotowanie danych
+                # Data preparation
                 data = prepare_data_for_ml(
                     df, 
                     features=selected_features, 
                     target=target_col
                 )
                 
-                # Trenowanie modelu
+                # Model training
                 model_results = train_regression_model(
                     data, 
                     model_type='linear' if model_type == "Regresja liniowa" else 'random_forest'
                 )
                 
                 if model_results:
-                    # Wyświetlenie wyników
+                    # Display the results
                     st.success(f"Model {model_results['model_name']} wytrenowany pomyślnie")
                     
-                    # Metryki modelu
+                    # Model metrics
                     st.subheader("Metryki modelu")
                     metrics = model_results['metrics']
                     col1, col2, col3 = st.columns(3)
@@ -475,11 +475,11 @@ def display_ml_ui(df):
                     with col3:
                         st.metric("R²", round(metrics['r2'], 4))
                     
-                    # Wykres predykcji vs rzeczywiste wartości
+                    # Prediction Graph vs. Actual Values
                     st.subheader("Porównanie predykcji z rzeczywistymi wartościami")
                     st.plotly_chart(model_results['plot'], use_container_width=True)
                     
-                    # Ważność cech
+                    # Importance of features
                     st.subheader("Ważność cech")
                     st.dataframe(model_results['feature_importance'])
                     
@@ -489,14 +489,14 @@ def display_ml_ui(df):
     elif ml_type == "Klasyfikacja":
         st.subheader("Klasyfikacja")
         
-        # Wybór cech
+        # Feature selection
         selected_features = st.multiselect(
             "Wybierz cechy (zmienne niezależne)", 
             numeric_cols, 
             default=numeric_cols[:min(3, len(numeric_cols))]
         )
         
-        # Wybór zmiennej docelowej (preferujemy kategoryczne, ale można też numeryczne z małą liczbą unikalnych wartości)
+        # Selecting a target variable (we prefer categorical, but you can also use numeric with a small number of unique values)
         potential_targets = categorical_cols + [
             col for col in numeric_cols 
             if col not in selected_features and df[col].nunique() <= 10
@@ -507,7 +507,7 @@ def display_ml_ui(df):
             potential_targets
         ) if potential_targets else None
         
-        # Wybór modelu
+        # Model selection
         model_type = st.radio("Wybierz typ modelu", ["Regresja logistyczna", "Las losowy"])
         
         if not target_col:
@@ -516,34 +516,34 @@ def display_ml_ui(df):
             st.warning("Wybierz co najmniej jedną cechę.")
         elif st.button("Trenuj model"):
             with st.spinner("Trenowanie modelu klasyfikacji..."):
-                # Przygotowanie danych
+                # Data preparation
                 data = prepare_data_for_ml(
                     df, 
                     features=selected_features, 
                     target=target_col
                 )
                 
-                # Trenowanie modelu
+                # Model training
                 model_results = train_classification_model(
                     data, 
                     model_type='logistic' if model_type == "Regresja logistyczna" else 'random_forest'
                 )
                 
                 if model_results:
-                    # Wyświetlenie wyników
+                    # Display the results
                     st.success(f"Model {model_results['model_name']} wytrenowany pomyślnie")
                     
-                    # Metryki modelu
+                    # Model metrics
                     st.subheader("Metryki modelu")
                     metrics = model_results['metrics']
                     st.metric("Dokładność (Accuracy)", f"{round(metrics['accuracy'] * 100, 2)}%")
                     
-                    # Raport klasyfikacji
+                    # Classification report
                     st.subheader("Raport klasyfikacji")
                     report_df = pd.DataFrame(metrics['report']).T
                     st.dataframe(report_df)
                     
-                    # Ważność cech
+                    # Importance of features
                     if model_results['feature_importance'] is not None:
                         st.subheader("Ważność cech")
                         st.dataframe(model_results['feature_importance'])

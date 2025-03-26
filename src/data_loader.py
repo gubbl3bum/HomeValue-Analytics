@@ -3,17 +3,17 @@ import streamlit as st
 
 def load_csv_file(uploaded_file):
     """
-    Wczytuje dane z pliku CSV.
-    
+    Loads data from a CSV file.
+
     Parameters:
     -----------
     uploaded_file : UploadedFile
-        Plik CSV przesłany przez użytkownika
-    
+    CSV file uploaded by user
+
     Returns:
     --------
     pandas.DataFrame or None
-        DataFrame z załadowanymi danymi lub None w przypadku błędu
+    DataFrame with loaded data or None on error
     """
     try:
         df = pd.read_csv(uploaded_file)
@@ -24,12 +24,12 @@ def load_csv_file(uploaded_file):
 
 def preview_data(df):
     """
-    Wyświetla edytowalny podgląd danych.
+    Displays an editable preview of the data.
     """
     if df is not None:
         st.write("Podgląd danych (kliknij w komórkę aby edytować):")
         
-        # Używamy data_editor zamiast dataframe
+        # Use data_editor instead of dataframe
         edited_df = st.data_editor(
             df,
             num_rows="dynamic",
@@ -37,7 +37,7 @@ def preview_data(df):
             hide_index=False
         )
         
-        # Jeśli dane zostały zmienione, aktualizujemy DataFrame
+        # If the data has changed, we update the DataFrame
         if not edited_df.equals(df):
             st.success("Dane zostały zaktualizowane!")
             return edited_df
@@ -47,17 +47,17 @@ def preview_data(df):
 
 def get_numeric_columns(df):
     """
-    Zwraca listę kolumn numerycznych z DataFrame.
-    
+    Returns a list of numeric columns from a DataFrame.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
-    
+    A DataFrame with data
+
     Returns:
     --------
     list
-        Lista nazw kolumn numerycznych
+    A list of numeric column names
     """
     if df is not None:
         return df.select_dtypes(include=["number"]).columns.tolist()
@@ -65,17 +65,17 @@ def get_numeric_columns(df):
 
 def get_categorical_columns(df):
     """
-    Zwraca listę kolumn kategorycznych z DataFrame.
-    
+    Returns a list of categorical columns from a DataFrame.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
-    
+    DataFrame with data
+
     Returns:
     --------
     list
-        Lista nazw kolumn kategorycznych
+    List of categorical column names
     """
     if df is not None:
         return df.select_dtypes(include=["object", "category"]).columns.tolist()
@@ -83,17 +83,17 @@ def get_categorical_columns(df):
 
 def get_datetime_columns(df):
     """
-    Zwraca listę kolumn z datami z DataFrame.
-    
+    Returns a list of date columns from a DataFrame.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
-    
+    A DataFrame with data
+
     Returns:
     --------
     list
-        Lista nazw kolumn z datami
+    A list of date column names
     """
     if df is not None:
         return df.select_dtypes(include=["datetime"]).columns.tolist()
@@ -101,17 +101,17 @@ def get_datetime_columns(df):
 
 def get_column_types(df):
     """
-    Zwraca słownik z typami kolumn.
-    
+    Returns a dictionary of column types.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
-    
+    DataFrame with data
+
     Returns:
     --------
     dict
-        Słownik z typami kolumn
+    A dictionary of column types
     """
     if df is not None:
         return {

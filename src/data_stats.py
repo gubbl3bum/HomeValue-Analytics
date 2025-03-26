@@ -1,18 +1,18 @@
 def compute_basic_statistics(df, columns):
     """
-    Oblicza podstawowe statystyki dla wybranych kolumn numerycznych.
-    
+    Calculates basic statistics for selected numeric columns.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    A DataFrame with data
     columns : list
-        Lista kolumn do analizy
-    
+    A list of columns to analyze
+
     Returns:
     --------
     pandas.DataFrame or None
-        DataFrame ze statystykami lub None jeśli brak kolumn do analizy
+    A DataFrame with statistics or None if there are no columns to analyze
     """
     if not columns:
         return None
@@ -24,11 +24,11 @@ def compute_basic_statistics(df, columns):
         'min',
         'max',
         'median',
-        'skew',  # używamy nazw funkcji zamiast lambda
-        'kurt'   # używamy nazw funkcji zamiast lambda
+        'skew',  
+        'kurt'   
     ]).round(2)
 
-    # Tłumaczenie nazw statystyk na polski
+    # Translation of statistics names into Polish
     stats = stats.rename({
         'count': 'Liczba obserwacji',
         'mean': 'Średnia',
@@ -44,10 +44,10 @@ def compute_basic_statistics(df, columns):
 
 def compute_correlation_matrix(df, selected_columns):
     """
-    Oblicza macierz korelacji między wybranymi kolumnami.
-    :param df: DataFrame z danymi
-    :param selected_columns: Lista kolumn do analizy korelacji
-    :return: DataFrame z macierzą korelacji
+    Calculates the correlation matrix between selected columns.
+    :param df: DataFrame with data
+    :param selected_columns: List of columns to analyze correlation
+    :return: DataFrame with correlation matrix
     """
     if not selected_columns or len(selected_columns) < 2:
         return None
@@ -56,11 +56,11 @@ def compute_correlation_matrix(df, selected_columns):
 
 def analyze_categorical_columns(df, categorical_columns):
     """
-    Analizuje kolumny kategoryczne - oblicza częstotliwość występowania wartości.
-    
-    :param df: DataFrame z danymi
-    :param categorical_columns: Lista kolumn kategorycznych do analizy
-    :return: Słownik z DataFrames zawierającymi analizę dla każdej kolumny
+    Analyzes categorical columns - calculates the frequency of values.
+
+    :param df: DataFrame with data
+    :param categorical_columns: List of categorical columns to analyze
+    :return: Dictionary with DataFrames containing the analysis for each column
     """
     if not categorical_columns:
         return None
@@ -77,17 +77,17 @@ def analyze_categorical_columns(df, categorical_columns):
 
 def analyze_price_per_sqm(df, price_column, area_column):
     """
-    Oblicza cenę za metr kwadratowy i podstawowe statystyki.
-    
-    :param df: DataFrame z danymi
-    :param price_column: Nazwa kolumny z ceną
-    :param area_column: Nazwa kolumny z powierzchnią
-    :return: DataFrame ze statystykami ceny za metr kwadratowy
+    Calculates price per square meter and basic statistics.
+
+    :param df: DataFrame with data
+    :param price_column: Name of the price column
+    :param area_column: Name of the area column
+    :return: DataFrame with statistics of price per square meter
     """
     if price_column not in df.columns or area_column not in df.columns:
         return None
 
-    # Unikamy dzielenia przez zero
+    # Avoiding division by zero
     valid_data = df[(df[area_column] > 0) & df[price_column].notna()]
 
     if len(valid_data) == 0:

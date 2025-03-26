@@ -5,25 +5,25 @@ import plotly.express as px
 
 def create_scatter_plot(df, x_column, y_column, color_column=None, title="Wykres rozrzutu"):
     """
-    Tworzy wykres rozrzutu (scatter plot) z podanych danych.
-    
+    Creates a scatter plot from the given data.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    DataFrame with data
     x_column : str
-        Nazwa kolumny dla osi X
+    Column name for X-axis
     y_column : str
-        Nazwa kolumny dla osi Y
+    Column name for Y-axis
     color_column : str, optional
-        Nazwa kolumny do kolorowania punktów
+    Column name for coloring points
     title : str, optional
-        Tytuł wykresu
-        
+    Title of the plot
+
     Returns:
     --------
     fig : plotly.graph_objects.Figure
-        Obiekt wykresu plotly
+    Plotly graph object
     """
     try:
         fig = px.scatter(df, x=x_column, y=y_column, 
@@ -38,23 +38,23 @@ def create_scatter_plot(df, x_column, y_column, color_column=None, title="Wykres
 
 def create_histogram(df, column, bins=30, title="Histogram"):
     """
-    Tworzy histogram dla wybranej kolumny.
-    
+    Creates a histogram for the selected column.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    DataFrame with data
     column : str
-        Nazwa kolumny do analizy
+    Name of the column to analyze
     bins : int, optional
-        Liczba przedziałów histogramu
+    Number of histogram bins
     title : str, optional
-        Tytuł wykresu
-        
+    Title of the plot
+
     Returns:
     --------
     fig : plotly.graph_objects.Figure
-        Obiekt wykresu plotly
+    Plotly plot object
     """
     try:
         fig = px.histogram(df, x=column, 
@@ -68,26 +68,26 @@ def create_histogram(df, column, bins=30, title="Histogram"):
 
 def create_bar_chart(df, x_column, y_column, title="Wykres słupkowy"):
     """
-    Tworzy wykres słupkowy dla wybranych kolumn.
-    
+    Creates a bar chart for the selected columns.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    DataFrame with data
     x_column : str
-        Nazwa kolumny dla osi X (kategoryczna)
+    Column name for X-axis (categorical)
     y_column : str
-        Nazwa kolumny dla osi Y (numeryczna)
+    Column name for Y-axis (numeric)
     title : str, optional
-        Tytuł wykresu
-        
+    Chart title
+
     Returns:
     --------
     fig : plotly.graph_objects.Figure
-        Obiekt wykresu plotly
+    Plotly chart object
     """
     try:
-        # Grupowanie danych
+        # Data grouping
         grouped_data = df.groupby(x_column)[y_column].mean().reset_index()
         
         fig = px.bar(grouped_data, x=x_column, y=y_column, 
@@ -100,23 +100,23 @@ def create_bar_chart(df, x_column, y_column, title="Wykres słupkowy"):
 
 def create_line_chart(df, x_column, y_column, title="Wykres liniowy"):
     """
-    Tworzy wykres liniowy dla wybranych kolumn.
-    
+    Creates a line chart for the selected columns.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    DataFrame with data
     x_column : str
-        Nazwa kolumny dla osi X
+    Column name for X-axis
     y_column : str
-        Nazwa kolumny dla osi Y
+    Column name for Y-axis
     title : str, optional
-        Tytuł wykresu
-        
+    Chart title
+
     Returns:
     --------
     fig : plotly.graph_objects.Figure
-        Obiekt wykresu plotly
+    Plotly chart object
     """
     try:
         fig = px.line(df, x=x_column, y=y_column, 
@@ -129,21 +129,21 @@ def create_line_chart(df, x_column, y_column, title="Wykres liniowy"):
 
 def create_heatmap(df, columns=None, title="Mapa ciepła korelacji"):
     """
-    Tworzy mapę ciepła korelacji między wybranymi kolumnami.
-    
+    Creates a heat map of the correlation between the selected columns.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    A DataFrame with data
     columns : list, optional
-        Lista nazw kolumn do uwzględnienia (domyślnie wszystkie numeryczne)
+    A list of column names to include (default is all numeric)
     title : str, optional
-        Tytuł wykresu
-        
+    The title of the plot
+
     Returns:
     --------
     fig : matplotlib.figure.Figure
-        Obiekt wykresu matplotlib
+    A matplotlib plot object
     """
     try:
         if columns is None:
@@ -161,21 +161,21 @@ def create_heatmap(df, columns=None, title="Mapa ciepła korelacji"):
 
 def create_pie_chart(df, column, title="Wykres kołowy"):
     """
-    Tworzy wykres kołowy dla wybranej kolumny kategorycznej.
-    
+    Creates a pie chart for the selected categorical column.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    DataFrame with data
     column : str
-        Nazwa kolumny kategorycznej
+    Categorical column name
     title : str, optional
-        Tytuł wykresu
-        
+    Chart title
+
     Returns:
     --------
     fig : plotly.graph_objects.Figure
-        Obiekt wykresu plotly
+    Plotly Chart Object
     """
     try:
         value_counts = df[column].value_counts().reset_index()
@@ -190,12 +190,12 @@ def create_pie_chart(df, column, title="Wykres kołowy"):
 
 def display_chart_ui(df):
     """
-    Wyświetla interfejs użytkownika do tworzenia wykresów.
-    
+    Displays a user interface for creating charts.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    DataFrame with data
     """
     st.subheader("Wizualizacja danych 📊")
     
@@ -203,7 +203,7 @@ def display_chart_ui(df):
         st.warning("Brak danych do wizualizacji. Najpierw wczytaj plik CSV.")
         return
     
-    # Pobieranie typów kolumn
+    # Getting column types
     numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
     categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
     all_cols = df.columns.tolist()
@@ -212,14 +212,14 @@ def display_chart_ui(df):
         st.warning("Brak kolumn numerycznych do wizualizacji.")
         return
     
-    # Wybór typu wykresu
+    # Selecting a chart type
     chart_type = st.selectbox(
         "Wybierz typ wykresu",
         ["Wykres rozrzutu", "Histogram", "Wykres pudełkowy", "Wykres słupkowy", 
          "Wykres liniowy", "Mapa ciepła korelacji", "Wykres kołowy"]
     )
     
-    # Tworzenie wykresu w zależności od typu
+    # Creating a chart based on type
     if chart_type == "Wykres rozrzutu":
         x_col = st.selectbox("Wybierz kolumnę dla osi X", numeric_cols)
         y_col = st.selectbox("Wybierz kolumnę dla osi Y", numeric_cols)

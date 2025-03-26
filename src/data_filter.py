@@ -4,23 +4,23 @@ import numpy as np
 
 def filter_numeric_column(df, column, min_value=None, max_value=None):
     """
-    Filtruje DataFrame według wartości minimalnej i maksymalnej dla kolumny numerycznej.
-    
+    Filters the DataFrame by the minimum and maximum values ​​for a numeric column.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    DataFrame with data
     column : str
-        Nazwa kolumny numerycznej do filtrowania
+    Name of the numeric column to filter
     min_value : float, optional
-        Minimalna wartość (włącznie)
+    Minimum value (inclusive)
     max_value : float, optional
-        Maksymalna wartość (włącznie)
-        
+    Maximum value (inclusive)
+
     Returns:
     --------
     pandas.DataFrame
-        Przefiltrowany DataFrame
+    Filtered DataFrame
     """
     filtered_df = df.copy()
     
@@ -34,21 +34,21 @@ def filter_numeric_column(df, column, min_value=None, max_value=None):
 
 def filter_categorical_column(df, column, selected_values):
     """
-    Filtruje DataFrame według wybranych wartości dla kolumny kategorycznej.
-    
+    Filters the DataFrame by selected values ​​for a categorical column.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    DataFrame with data
     column : str
-        Nazwa kolumny kategorycznej do filtrowania
-    selected_values : list
-        Lista wybranych wartości
-        
+    Name of the categorical column to filter
+    selected_values ​​: list
+    List of selected values
+
     Returns:
     --------
     pandas.DataFrame
-        Przefiltrowany DataFrame
+    Filtered DataFrame
     """
     if not selected_values:
         return df
@@ -57,26 +57,26 @@ def filter_categorical_column(df, column, selected_values):
 
 def filter_by_missing_values(df, columns, include_missing=True):
     """
-    Filtruje DataFrame według brakujących wartości w wybranych kolumnach.
-    
+    Filters DataFrame by missing values ​​in selected columns.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
+    DataFrame with data
     columns : list
-        Lista nazw kolumn do sprawdzenia
+    List of column names to check
     include_missing : bool
-        Jeśli True, zachowuje wiersze z brakującymi wartościami,
-        jeśli False, usuwa wiersze z brakującymi wartościami
-        
+    If True, keeps rows with missing values,
+    if False, removes rows with missing values
+
     Returns:
     --------
     pandas.DataFrame
-        Przefiltrowany DataFrame
+    Filtered DataFrame
     """
     if not columns:
         return df
-        
+
     if include_missing:
         return df
     else:
@@ -84,21 +84,21 @@ def filter_by_missing_values(df, columns, include_missing=True):
 
 def extract_subtable(df, rows=None, columns=None):
     """
-    Ekstrahuje podtablicę na podstawie wybranych numerów/nazw wierszy i kolumn.
-    
+    Extracts a subarray based on the selected row and column numbers/names.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame źródłowy
+    Source DataFrame
     rows : list, optional
-        Lista indeksów lub nazw wierszy do wyekstrahowania
+    List of row indexes or names to extract
     columns : list, optional
-        Lista nazw kolumn do wyekstrahowania
-        
+    List of column names to extract
+
     Returns:
     --------
     pandas.DataFrame
-        Wyekstrahowana podtablica
+    Extracted subarray
     """
     try:
         if rows is not None and columns is not None:
@@ -114,17 +114,17 @@ def extract_subtable(df, rows=None, columns=None):
 
 def display_filter_ui(df):
     """
-    Wyświetla interfejs użytkownika do filtrowania danych.
-    
+    Displays a user interface for filtering data.
+
     Parameters:
     -----------
     df : pandas.DataFrame
-        DataFrame z danymi
-        
+    A DataFrame with data
+
     Returns:
     --------
     tuple
-        (przefiltrowany_dataframe, czy_filtrowano)
+    (filtered_dataframe, is_filtered)
     """
     st.subheader("Filtrowanie danych 🔍")
     
@@ -132,27 +132,27 @@ def display_filter_ui(df):
         st.warning("Brak danych do filtrowania. Najpierw wczytaj plik CSV.")
         return df, False
     
-    # Inicjalizacja filtrowanego dataframe w session state
+    # Initialize filtered dataframe in session state
     if 'filtered_df' not in st.session_state:
         st.session_state.filtered_df = df.copy()
         st.session_state.filters_applied = False
     
-    # Pobieranie typów kolumn
+    #Getting column types
     numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
     categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
     
-    # Tworzenie kontenerów dla różnych typów filtrów
-    with st.expander("Filtry dla kolumn numerycznych", expanded=False):  # Zmiana na False
+    # Creating containers for different types of filters
+    with st.expander("Filtry dla kolumn numerycznych", expanded=False):  # Change to False
         numeric_filters = {}
         
         for col in numeric_cols:
             st.subheader(f"Filtruj kolumnę: {col}")
             
-            # Określenie min i max wartości
+            # Determine min and max values
             min_val = float(df[col].min())
             max_val = float(df[col].max())
             
-            # Pola do wprowadzenia zakresu
+            # Fields to enter the range
             col1, col2 = st.columns(2)
             with col1:
                 use_min = st.checkbox(f"Użyj min. wartości dla {col}", key=f"use_min_{col}")
@@ -170,7 +170,7 @@ def display_filter_ui(df):
                                            max_value=max_val,
                                            key=f"max_{col}")
             
-            # Zapisanie filtrów
+            # Saving filters
             numeric_filters[col] = {
                 'use_min': use_min,
                 'min_val': min_input if use_min else None,
@@ -178,16 +178,16 @@ def display_filter_ui(df):
                 'max_val': max_input if use_max else None
             }
     
-    with st.expander("Filtry dla kolumn kategorycznych", expanded=False):  # Zmiana na False
+    with st.expander("Filtry dla kolumn kategorycznych", expanded=False):  # Change to False
         categorical_filters = {}
         
         for col in categorical_cols:
             st.subheader(f"Filtruj kolumnę: {col}")
             
-            # Pobranie unikalnych wartości
+            # Getting unique values
             unique_values = df[col].dropna().unique().tolist()
             
-            # Utworzenie wielokrotnego wyboru
+            # Create multiple selection
             selected = st.multiselect(
                 f"Wybierz wartości dla {col} (puste = wszystkie)",
                 options=unique_values,
@@ -195,22 +195,22 @@ def display_filter_ui(df):
                 key=f"cat_{col}"
             )
             
-            # Zapisanie filtrów
+            # Saving filters
             categorical_filters[col] = selected
 
     
-    # Dodaj nowy expander dla ekstrakcji podtablic
-    with st.expander("Ekstrakcja podtablicy", expanded=False):  # Zmiana na False
+    # Add new expander for subarray extraction
+    with st.expander("Ekstrakcja podtablicy", expanded=False):  # Change to False
         st.subheader("Wybierz wiersze i kolumny do ekstrakcji")
         
-        # Wybór kolumn
+        # Column selection
         selected_columns = st.multiselect(
             "Wybierz kolumny do ekstrakcji (puste = wszystkie)",
             options=df.columns.tolist(),
             default=[]
         )
         
-        # Wybór wierszy przez zakres indeksów
+        # Selecting rows by index range
         st.subheader("Wybierz zakres wierszy")
         use_row_range = st.checkbox("Użyj zakresu wierszy")
         
@@ -225,7 +225,7 @@ def display_filter_ui(df):
         else:
             selected_rows = None
             
-        # Przycisk do ekstrakcji
+        # Extraction button
         if st.button("Ekstrahuj podtablicę"):
             extracted_df = extract_subtable(
                 df, 
@@ -237,7 +237,7 @@ def display_filter_ui(df):
                 st.success(f"Wyekstrahowano podtablicę o wymiarach: {extracted_df.shape}")
                 st.dataframe(extracted_df)
                 
-                # Opcja pobrania wyekstrahowanej podtablicy
+                # Option to download extracted subarray
                 csv = extracted_df.to_csv(index=False)
                 st.download_button(
                     label="Pobierz wyekstrahowaną podtablicę (CSV)",
@@ -246,19 +246,19 @@ def display_filter_ui(df):
                     mime="text/csv"
                 )
     
-    # Przycisk do stosowania filtrów - użycie kolumn i kolorowego przycisku
+    # Button for applying filters - using columns and a colored button
     col1, col2 = st.columns(2)
     with col1:
         filter_button = st.button("🔍 Filtruj dane", key="filter_button", use_container_width=True)
     with col2:
         reset_button = st.button("🔄 Resetuj filtry", key="reset_button", type="tertiary", use_container_width=True)
     
-    # Logika filtrowania po naciśnięciu przycisku
+    # Filter logic at the push of a button
     if filter_button:
         filtered_data = df.copy()
         filters_applied = False
         
-        # Stosowanie filtrów numerycznych
+        # Using numerical filters
         for col, filter_settings in numeric_filters.items():
             if filter_settings['use_min'] or filter_settings['use_max']:
                 filtered_data = filter_numeric_column(
@@ -269,7 +269,7 @@ def display_filter_ui(df):
                 )
                 filters_applied = True
         
-        # Stosowanie filtrów kategorycznych
+        # Using categorical filters
         for col, selected_values in categorical_filters.items():
             if selected_values:
                 filtered_data = filter_categorical_column(
@@ -279,26 +279,26 @@ def display_filter_ui(df):
                 )
                 filters_applied = True
         
-        # Zapisanie przefiltrowanego dataframe w session state
+        # Saving the filtered dataframe in session state
         st.session_state.filtered_df = filtered_data
         st.session_state.filters_applied = filters_applied
         
-        # Wyświetlenie informacji o filtrach
+        # Displaying information about filters
         if filters_applied:
             st.success(f"Dane przefiltrowane. Pozostało {len(filtered_data)} z {len(df)} wierszy ({(len(filtered_data)/len(df)*100):.1f}%).")
         else:
             st.info("Nie zastosowano żadnych filtrów.")
     
-    # Resetowanie filtrów
+    # Resetting filters
     if reset_button:
         st.session_state.filtered_df = df.copy()
         st.session_state.filters_applied = False
         st.success("Filtry zresetowane.")
     
-    # Wyświetlenie podglądu przefiltrowanych danych
+    # Preview of filtered data
     if st.session_state.filters_applied:
         st.subheader("Podgląd przefiltrowanych danych")
         st.dataframe(st.session_state.filtered_df.head())
     
-    # Zwrócenie przefiltrowanego dataframe i informacji, czy zastosowano filtry
+    # Returns the filtered dataframe and whether any filters are applied
     return st.session_state.filtered_df, st.session_state.filters_applied
