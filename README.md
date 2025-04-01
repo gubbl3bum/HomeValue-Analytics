@@ -83,6 +83,7 @@ streamlit run src/main.py --server.enableStaticServing true  # debug mode
 ```shell
 cd ~/HomeValue-Analytics         # go to project root
 pyinstaller app.spec             # create executable
+pyinstaller --onefile --clean --add-binary ".venv/Scripts/streamlit.exe;." --add-data "src;src" src/app.py
 ```
 
 ### Production Mode
