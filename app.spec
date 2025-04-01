@@ -15,7 +15,7 @@ hiddenimports = collect_submodules('streamlit') + [
     'scipy'
 ]
 
-datas = collect_data_files('streamlit')
+datas = collect_data_files('streamlit') + [("src/main.py", "src")] + [("src/data_stats.py", "src")] + [("src/data_filter.py", "src")] + [("src/data_loader.py", "src")] + [("src/data_visuals.py", "src")] + [("src/data_ml.py", "src")] 
 
 binaries = []
 if sys.platform.startswith('win'):
