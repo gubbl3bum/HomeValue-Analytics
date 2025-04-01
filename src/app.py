@@ -29,23 +29,23 @@ logging.basicConfig(
 STREAMLIT_PORT = 8501
 STREAMLIT_URL = f"http://localhost:{STREAMLIT_PORT}"
 
-# Absolute path to the Streamlit executable
-STREAMLIT_PATH = r"E:\uniwerek\SEMESTR_6\hurtownie_danych\projekt\HomeValue-Analytics\.venv\Scripts\streamlit.exe"
-
 if getattr(sys, 'frozen', False):  
     BASE_DIR = sys._MEIPASS
     MAIN_SCRIPT = os.path.join(BASE_DIR, "src", "main.py")
-
-    if not os.path.exists(MAIN_SCRIPT):
-        MAIN_SCRIPT = os.path.join(BASE_DIR, "main.py")
+    STREAMLIT_PATH = os.path.join(BASE_DIR, "streamlit.exe")  # Adjust for frozen mode
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     MAIN_SCRIPT = os.path.join(BASE_DIR, "src", "main.py")
-
+    STREAMLIT_PATH = os.path.join(BASE_DIR, ".venv", "Scripts", "streamlit.exe")
 
 # Function to run Streamlit
 def run_streamlit():
     logging.info(f"Starting Streamlit server with script: {MAIN_SCRIPT}")
+    logging.info(f"Using Streamlit executable at: {STREAMLIT_PATH}")
+
+    if not os.path.exists(STREAMLIT_PATH):
+        logging.error(f"Streamlit executable not found: {STREAMLIT_PATH}")
+        return
 
     if not os.path.exists(MAIN_SCRIPT):
         logging.error(f"Streamlit script not found: {MAIN_SCRIPT}")
