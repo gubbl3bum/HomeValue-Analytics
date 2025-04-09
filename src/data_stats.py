@@ -1,3 +1,5 @@
+import streamlit as st
+
 def compute_basic_statistics(df, columns):
     """
     Oblicza podstawowe statystyki dla wybranych kolumn numerycznych.
@@ -16,7 +18,7 @@ def compute_basic_statistics(df, columns):
     """
     if not columns:
         return None
-    
+
     stats = df[columns].agg([
         'count',
         'mean',
@@ -56,11 +58,24 @@ def compute_correlation_matrix(df, selected_columns):
 
 def analyze_categorical_columns(df, categorical_columns):
     """
-    Analizuje kolumny kategoryczne - oblicza częstotliwość występowania wartości.
+    Analizuje kolumny kategoryczne - oblicza statystyki opisowe.
     
-    :param df: DataFrame z danymi
-    :param categorical_columns: Lista kolumn kategorycznych do analizy
-    :return: Słownik z DataFrames zawierającymi analizę dla każdej kolumny
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        DataFrame z danymi
+    categorical_columns : list
+        Lista kolumn kategorycznych do analizy
+    
+    Returns:
+    --------
+    dict
+        Słownik zawierający dla każdej kolumny:
+        - value_counts: częstotliwość występowania wartości
+        - unique_count: liczba unikalnych wartości
+        - mode: dominanta
+        - null_count: liczba wartości null
+        - null_percentage: procent wartości null
     """
     if not categorical_columns:
         return None
@@ -68,10 +83,21 @@ def analyze_categorical_columns(df, categorical_columns):
     results = {}
 
     for col in categorical_columns:
+        # Podstawowe statystyki
         value_counts = df[col].value_counts().reset_index()
-        value_counts.columns = [col, 'Count']
-        value_counts['Percentage'] = (value_counts['Count'] / len(df)) * 100
-        results[col] = value_counts
+        value_counts.columns = [col, 'Liczba']
+        value_counts['Procent'] = (value_counts['Liczba'] / len(df)) * 100
+
+        # Dodatkowe statystyki
+        summary = {
+            'value_counts': value_counts,
+            'unique_count': df[col].nunique(),
+            'mode': df[col].mode().iloc[0] if not df[col].mode().empty else None,
+            'null_count': df[col].isnull().sum(),
+            'null_percentage': (df[col].isnull().sum() / len(df)) * 100
+        }
+
+        results[col] = summary
 
     return results
 
@@ -100,3 +126,73 @@ def analyze_price_per_sqm(df, price_column, area_column):
     stats['missing_percentage'] = (stats['missing_values'] / len(df)) * 100
 
     return stats
+
+
+def display_statistics_ui(df):
+    """
+    Wyświetla interfejs użytkownika do analizy statystycznej.
+    
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        DataFrame z danymi
+    """
+    if df is None or df.empty:
+        st.warning("Brak danych do analizy.")
+        return
+
+    # Podział kolumn na numeryczne i kategoryczne
+    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+    categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+
+    # Sekcja dla kolumn numerycznych
+    st.subheader("Analiza kolumn numerycznych 📊")
+    if numeric_cols:
+        selected_numeric_cols = st.multiselect(
+            "Wybierz kolumny numeryczne do analizy",
+            numeric_cols,
+            default=numeric_cols[:min(3, len(numeric_cols))]
+        )
+
+        if st.button("Oblicz statystyki numeryczne"):
+            stats = compute_basic_statistics(df, selected_numeric_cols)
+            if stats is not None:
+                st.dataframe(stats)
+
+                # Macierz korelacji
+                if len(selected_numeric_cols) > 1:
+                    st.subheader("Macierz korelacji")
+                    corr_matrix = compute_correlation_matrix(df, selected_numeric_cols)
+                    st.dataframe(corr_matrix)
+    else:
+        st.info("Brak kolumn numerycznych w zbiorze danych.")
+
+    # Sekcja dla kolumn kategorycznych
+    st.subheader("Analiza kolumn kategorycznych 📑")
+    if categorical_cols:
+        selected_cat_cols = st.multiselect(
+            "Wybierz kolumny kategoryczne do analizy",
+            categorical_cols,
+            default=categorical_cols[:min(3, len(categorical_cols))]
+        )
+
+        if st.button("Oblicz statystyki kategoryczne"):
+            cat_stats = analyze_categorical_columns(df, selected_cat_cols)
+            if cat_stats:
+                for col, stats in cat_stats.items():
+                    st.write(f"\n### {col}")
+
+                    # Podstawowe informacje
+                    col1, col2, col3 = st.columns(3)
+                    with col1:
+                        st.metric("Liczba unikalnych wartości", stats['unique_count'])
+                    with col2:
+                        st.metric("Liczba braków danych", stats['null_count'])
+                    with col3:
+                        st.metric("Najczęstsza wartość", stats['mode'])
+
+                    # Tabela częstości
+                    st.write("Rozkład wartości:")
+                    st.dataframe(stats['value_counts'])
+    else:
+        st.info("Brak kolumn kategorycznych w zbiorze danych.")
