@@ -1,7 +1,5 @@
 import streamlit as st
-import pandas as pd
-import numpy as np
-from data_loader import preview_data  # Dodaj import funkcji preview_data
+from data_loader import preview_data
 
 def extract_subtable(df, rows=None, columns=None):
     """
@@ -58,17 +56,17 @@ def parse_range_string(range_str, max_idx):
     """
     if not range_str.strip():
         return []
-    
+
     indices = set()
     
     # Dzielimy na części po przecinku
     parts = range_str.split(',')
-    
+
     for part in parts:
         part = part.strip()
         if ':' in part:  # Zakres typu "start:end"
             start, end = part.split(':')
-            
+
             # Obsługa ujemnych indeksów i pustych wartości
             if not start:  # ":n" - pierwsze n wierszy
                 start = 0
@@ -76,23 +74,23 @@ def parse_range_string(range_str, max_idx):
                 start = int(start)
                 if start < 0:
                     start = max(0, max_idx + start)
-                    
+    
             if not end:  # "n:" - do końca
                 end = max_idx
             else:
                 end = int(end)
                 if end < 0:
                     end = max_idx + end
-            
+
             indices.update(range(start, min(end + 1, max_idx + 1)))
-            
+
         else:  # Pojedynczy indeks
             idx = int(part)
             if idx < 0:
                 idx = max_idx + idx
             if 0 <= idx <= max_idx:
                 indices.add(idx)
-                
+   
     return sorted(list(indices))
 
 def display_subtable_ui(df):
@@ -110,16 +108,16 @@ def display_subtable_ui(df):
         (wynikowy DataFrame, bool czy dokonano ekstrakcji)
     """
     st.subheader("Ekstrakcja podtablicy 📋")
-    
+
     if df is None or df.empty:
         st.warning("Brak danych do ekstrakcji. Najpierw wczytaj plik CSV.")
         return df, False
-    
+
     # Initialize session state
     if 'extracted_df' not in st.session_state:
         st.session_state.extracted_df = df.copy()
         st.session_state.extraction_applied = False
-    
+
     # Column selection
     all_columns = df.columns.tolist()
     selected_columns = st.multiselect(
@@ -127,7 +125,7 @@ def display_subtable_ui(df):
         options=all_columns,
         default=all_columns[:3] if len(all_columns) > 3 else all_columns
     )
-    
+
     # Row range selection
     st.subheader("Wybór wierszy")
     st.markdown("""
@@ -138,46 +136,46 @@ def display_subtable_ui(df):
     - `-10:` - ostatnie 10 wierszy
     - `:10` - pierwsze 10 wiersze
     """)
-    
+
     range_str = st.text_input(
         "Zakresy wierszy:",
         value=":10",
         help="Wprowadź zakresy wierszy w podanym formacie"
     )
-    
+
     # Extract button
     if st.button("📋 Wyodrębnij podtablicę", use_container_width=True):
         if not selected_columns:
             st.warning("Wybierz co najmniej jedną kolumnę.")
             return st.session_state.extracted_df, False
-        
+
         try:
             selected_rows = parse_range_string(range_str, len(df) - 1)
             if not selected_rows:
                 st.warning("Nie wybrano żadnego zakresu wierszy.")
                 return st.session_state.extracted_df, False
-                
+
             extracted_data = extract_subtable(df, rows=selected_rows, columns=selected_columns)
-            
+
             if extracted_data is not None:
                 st.session_state.extracted_df = extracted_data
                 st.session_state.extraction_applied = True
                 st.success(f"Wyodrębniono podtablicę o wymiarach: {extracted_data.shape}")
                 st.write(f"Wybrane wiersze: {len(selected_rows)}")
-                
+  
         except ValueError as e:
             st.error(f"Błąd w formacie zakresów: {str(e)}")
             return st.session_state.extracted_df, False
-    
+
     # Reset button
     if st.button("🔄 Resetuj", type="secondary", use_container_width=True):
         st.session_state.extracted_df = df.copy()
         st.session_state.extraction_applied = False
         st.success("Zresetowano do oryginalnych danych.")
-    
+
     # Display preview using the same formatting as in data_loader
     if st.session_state.extraction_applied:
         st.subheader("Podgląd wyodrębnionej podtablicy")
-        preview_data(st.session_state.extracted_df)  # Użyj funkcji preview_data zamiast st.dataframe
-    
+        preview_data(st.session_state.extracted_df)
+
     return st.session_state.extracted_df, st.session_state.extraction_applied
