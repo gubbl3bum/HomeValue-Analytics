@@ -2,6 +2,8 @@ import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
 import plotly.express as px
+import pandas as pd
+import numpy as np
 
 def create_scatter_plot(df, x_column, y_column, color_column=None, title="Wykres rozrzutu"):
     """
@@ -36,7 +38,33 @@ def create_scatter_plot(df, x_column, y_column, color_column=None, title="Wykres
         st.error(f"Błąd podczas tworzenia wykresu rozrzutu: {e}")
         return None
 
-def create_histogram(df, column, bins=30, title="Histogram"):
+def calculate_default_bins(df, column):
+    """
+    Oblicza sugerowaną liczbę przedziałów na podstawie danych.
+    
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        DataFrame z danymi
+    column : str
+        Nazwa kolumny do analizy
+    
+    Returns:
+    --------
+    int
+        Sugerowana liczba przedziałów
+    """
+    data = df[column].dropna()
+    
+    if pd.api.types.is_integer_dtype(df[column]):
+        # Dla danych całkowitych - unikalne wartości
+        return min(int(data.max() - data.min() + 1), 50)
+    else:
+        # Dla danych ciągłych - reguła Sturges'a
+        n = len(data)
+        return min(int(1 + 3.322 * np.log10(n)), 50)
+
+def create_histogram(df, column, bins=None, title="Histogram"):
     """
     Tworzy histogram dla wybranej kolumny.
     
@@ -57,6 +85,9 @@ def create_histogram(df, column, bins=30, title="Histogram"):
         Obiekt wykresu plotly
     """
     try:
+        if bins is None:
+            bins = calculate_default_bins(df, column)
+            
         fig = px.histogram(df, x=column, 
                            nbins=bins, 
                            title=title,
@@ -66,9 +97,9 @@ def create_histogram(df, column, bins=30, title="Histogram"):
         st.error(f"Błąd podczas tworzenia histogramu: {e}")
         return None
 
-def create_bar_chart(df, x_column, y_column, title="Wykres słupkowy"):
+def create_bar_chart(df, x_column, y_column, agg_func='mean', title=None):
     """
-    Tworzy wykres słupkowy dla wybranych kolumn.
+    Tworzy rozszerzony wykres słupkowy dla wybranych kolumn.
     
     Parameters:
     -----------
@@ -78,21 +109,47 @@ def create_bar_chart(df, x_column, y_column, title="Wykres słupkowy"):
         Nazwa kolumny dla osi X (kategoryczna)
     y_column : str
         Nazwa kolumny dla osi Y (numeryczna)
+    agg_func : str, optional
+        Funkcja agregująca ('mean', 'median', 'sum', 'count')
     title : str, optional
         Tytuł wykresu
-        
-    Returns:
-    --------
-    fig : plotly.graph_objects.Figure
-        Obiekt wykresu plotly
     """
     try:
-        # Grupowanie danych
-        grouped_data = df.groupby(x_column)[y_column].mean().reset_index()
+        # Słownik funkcji agregujących
+        agg_functions = {
+            'mean': ('średnia', np.mean),
+            'median': ('mediana', np.median),
+            'sum': ('suma', np.sum),
+            'count': ('liczba', 'count')
+        }
         
-        fig = px.bar(grouped_data, x=x_column, y=y_column, 
-                     title=title,
-                     labels={x_column: x_column, y_column: f"Średnia {y_column}"})
+        # Grupowanie danych
+        func_name, func = agg_functions[agg_func]
+        grouped_data = df.groupby(x_column)[y_column].agg(func).reset_index()
+        
+        # Sortowanie wartości
+        grouped_data = grouped_data.sort_values(y_column, ascending=False)
+        
+        # Tworzenie tytułu jeśli nie podano
+        if title is None:
+            title = f"{func_name.capitalize()} {y_column} według {x_column}"
+        
+        fig = px.bar(grouped_data, 
+                    x=x_column, 
+                    y=y_column,
+                    title=title,
+                    labels={
+                        x_column: x_column,
+                        y_column: f"{func_name.capitalize()} {y_column}"
+                    })
+        
+        # Formatowanie osi jeśli wartości są całkowite
+        if pd.api.types.is_integer_dtype(df[x_column]):
+            fig.update_xaxes(tickformat="d")
+        
+        # Dodanie etykiet wartości nad słupkami
+        fig.update_traces(texttemplate='%{y:.2f}', textposition='outside')
+        
         return fig
     except Exception as e:
         st.error(f"Błąd podczas tworzenia wykresu słupkowego: {e}")
@@ -188,6 +245,80 @@ def create_pie_chart(df, column, title="Wykres kołowy"):
         st.error(f"Błąd podczas tworzenia wykresu kołowego: {e}")
         return None
 
+def create_category_frequency_plot(df, column, top_n=10, title=None):
+    """
+    Tworzy wykres słupkowy częstości dla kolumny kategorycznej.
+    """
+    try:
+        # Obliczanie częstości
+        value_counts = df[column].value_counts()
+        
+        # Wybieranie top N kategorii
+        if len(value_counts) > top_n:
+            other_count = value_counts[top_n:].sum()
+            value_counts = value_counts[:top_n]
+            value_counts['Pozostałe'] = other_count
+        
+        # Tworzenie DataFrame dla wykresu
+        plot_df = pd.DataFrame({
+            'Kategoria': value_counts.index,
+            'Liczba': value_counts.values,
+            'Procent': (value_counts.values / len(df)) * 100
+        })
+        
+        # Formatowanie tytułu
+        if title is None:
+            title = f"Top {top_n} najczęstszych wartości w kolumnie {column}"
+            if len(value_counts) <= top_n:
+                title = f"Wszystkie wartości w kolumnie {column}"
+        
+        # Tworzenie wykresu
+        fig = px.bar(plot_df, 
+                    x='Kategoria', 
+                    y='Liczba',
+                    text='Procent',
+                    title=title)
+        
+        # Formatowanie etykiet procentowych
+        fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
+        
+        # Jeśli wartości są liczbami całkowitymi, ustaw odpowiedni format osi
+        if pd.api.types.is_integer_dtype(df[column]):
+            fig.update_xaxes(tickformat="d")
+        
+        return fig
+    except Exception as e:
+        st.error(f"Błąd podczas tworzenia wykresu częstości: {e}")
+        return None
+
+def create_category_comparison_plot(df, cat_column, value_column, top_n=10, title=None):
+    """
+    Tworzy wykres słupkowy średnich wartości numerycznych dla kategorii.
+    """
+    try:
+        # Obliczanie średnich dla każdej kategorii
+        agg_data = df.groupby(cat_column)[value_column].agg(['mean', 'count']).reset_index()
+        agg_data = agg_data.sort_values('count', ascending=False)
+        
+        # Wybieranie top N kategorii
+        if len(agg_data) > top_n:
+            agg_data = agg_data.head(top_n)
+        
+        # Tworzenie wykresu
+        fig = px.bar(agg_data, 
+                    x=cat_column, 
+                    y='mean',
+                    title=title or f"Średnia {value_column} dla top {top_n} kategorii w {cat_column}")
+        
+        # Jeśli wartości są liczbami całkowitymi, ustaw odpowiedni format osi
+        if pd.api.types.is_integer_dtype(df[cat_column]):
+            fig.update_xaxes(tickformat="d")
+        
+        return fig
+    except Exception as e:
+        st.error(f"Błąd podczas tworzenia wykresu porównawczego: {e}")
+        return None
+
 def display_chart_ui(df):
     """
     Wyświetla interfejs użytkownika do tworzenia wykresów.
@@ -215,8 +346,8 @@ def display_chart_ui(df):
     # Wybór typu wykresu
     chart_type = st.selectbox(
         "Wybierz typ wykresu",
-        ["Wykres rozrzutu", "Histogram", "Wykres pudełkowy", "Wykres słupkowy", 
-         "Wykres liniowy", "Mapa ciepła korelacji", "Wykres kołowy"]
+        ["Wykres rozrzutu", "Histogram", "Wykres słupkowy", 
+         "Mapa ciepła korelacji", "Wykres kołowy", "Wykres częstości kategorii", "Wykres porównawczy kategorii"]
     )
     
     # Tworzenie wykresu w zależności od typu
@@ -247,20 +378,21 @@ def display_chart_ui(df):
         else:
             x_col = st.selectbox("Wybierz kolumnę kategoryczną (oś X)", categorical_cols)
             y_col = st.selectbox("Wybierz kolumnę numeryczną (oś Y)", numeric_cols)
+            agg_func = st.selectbox(
+                "Wybierz funkcję agregującą",
+                ['mean', 'median', 'sum', 'count'],
+                format_func=lambda x: {
+                    'mean': 'Średnia',
+                    'median': 'Mediana',
+                    'sum': 'Suma',
+                    'count': 'Liczba wystąpień'
+                }[x]
+            )
             
             if st.button("Generuj wykres słupkowy"):
-                fig = create_bar_chart(df, x_col, y_col)
+                fig = create_bar_chart(df, x_col, y_col, agg_func)
                 if fig:
                     st.plotly_chart(fig, use_container_width=True)
-    
-    elif chart_type == "Wykres liniowy":
-        x_col = st.selectbox("Wybierz kolumnę dla osi X", all_cols)
-        y_col = st.selectbox("Wybierz kolumnę dla osi Y", numeric_cols)
-        
-        if st.button("Generuj wykres liniowy"):
-            fig = create_line_chart(df, x_col, y_col)
-            if fig:
-                st.plotly_chart(fig, use_container_width=True)
     
     elif chart_type == "Mapa ciepła korelacji":
         selected_cols = st.multiselect("Wybierz kolumny numeryczne", numeric_cols, default=numeric_cols[:min(5, len(numeric_cols))])
@@ -281,5 +413,35 @@ def display_chart_ui(df):
             
             if st.button("Generuj wykres kołowy"):
                 fig = create_pie_chart(df, col)
+                if fig:
+                    st.plotly_chart(fig, use_container_width=True)
+    
+    elif chart_type == "Wykres częstości kategorii":
+        cat_col = st.selectbox("Wybierz kolumnę kategoryczną", categorical_cols, key='freq')
+        top_n = st.slider("Liczba najczęstszych kategorii", 
+                         min_value=5, 
+                         max_value=50, 
+                         value=10,
+                         key='freq_slider')
+        
+        if st.button("Generuj wykres częstości", key='freq_btn'):
+            fig = create_category_frequency_plot(df, cat_col, top_n)
+            if fig:
+                st.plotly_chart(fig, use_container_width=True)
+    
+    elif chart_type == "Wykres porównawczy kategorii":
+        if not categorical_cols:
+            st.warning("Brak kolumn kategorycznych do wizualizacji.")
+        else:
+            cat_col_2 = st.selectbox("Wybierz kolumnę kategoryczną", categorical_cols, key='comp')
+            num_col = st.selectbox("Wybierz kolumnę numeryczną", numeric_cols, key='comp_num')
+            top_n_2 = st.slider("Liczba kategorii", 
+                               min_value=5, 
+                               max_value=50, 
+                               value=10,
+                               key='comp_slider')
+            
+            if st.button("Generuj wykres porównawczy", key='comp_btn'):
+                fig = create_category_comparison_plot(df, cat_col_2, num_col, top_n_2)
                 if fig:
                     st.plotly_chart(fig, use_container_width=True)
