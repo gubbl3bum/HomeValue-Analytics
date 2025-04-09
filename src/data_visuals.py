@@ -7,32 +7,42 @@ import numpy as np
 
 def create_scatter_plot(df, x_column, y_column, color_column=None, title="Wykres rozrzutu"):
     """
-    Tworzy wykres rozrzutu (scatter plot) z podanych danych.
-    
-    Parameters:
-    -----------
-    df : pandas.DataFrame
-        DataFrame z danymi
-    x_column : str
-        Nazwa kolumny dla osi X
-    y_column : str
-        Nazwa kolumny dla osi Y
-    color_column : str, optional
-        Nazwa kolumny do kolorowania punktów
-    title : str, optional
-        Tytuł wykresu
-        
-    Returns:
-    --------
-    fig : plotly.graph_objects.Figure
-        Obiekt wykresu plotly
+    Tworzy ulepszony wykres rozrzutu z dodatkowymi funkcjami.
     """
     try:
-        fig = px.scatter(df, x=x_column, y=y_column, 
-                         color=color_column, 
-                         title=title,
-                         labels={x_column: x_column, y_column: y_column},
-                         hover_data=df.columns)
+        # Tworzenie podstawowego wykresu
+        fig = px.scatter(df, 
+                        x=x_column, 
+                        y=y_column,
+                        color=color_column,
+                        title=title,
+                        labels={
+                            x_column: f"{x_column}",
+                            y_column: f"{y_column}"
+                        },
+                        hover_data=df.columns)
+        
+        # Dodanie linii trendu
+        fig.add_traces(px.scatter(df, x=x_column, y=y_column, trendline="ols").data)
+        
+        # Obliczenie i dodanie korelacji do tytułu
+        if color_column is None:
+            corr = df[x_column].corr(df[y_column])
+            fig.update_layout(
+                title=f"{title}<br>Korelacja: {corr:.2f}"
+            )
+        
+        # Ulepszenie wyglądu
+        fig.update_layout(
+            plot_bgcolor='white',
+            margin=dict(t=100),
+            showlegend=True
+        )
+        
+        # Dodanie siatki
+        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='LightGray')
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightGray')
+        
         return fig
     except Exception as e:
         st.error(f"Błąd podczas tworzenia wykresu rozrzutu: {e}")
@@ -352,18 +362,69 @@ def display_chart_ui(df):
     
     # Tworzenie wykresu w zależności od typu
     if chart_type == "Wykres rozrzutu":
-        x_col = st.selectbox("Wybierz kolumnę dla osi X", numeric_cols)
-        y_col = st.selectbox("Wybierz kolumnę dla osi Y", numeric_cols)
-        color_col = st.selectbox("Wybierz kolumnę do kolorowania (opcjonalnie)", 
-                                ["Brak"] + categorical_cols + numeric_cols)
+        st.write("""
+        ### Wykres rozrzutu - instrukcja:
+        - Wybierz dwie zmienne numeryczne do porównania
+        - Opcjonalnie wybierz zmienną do kolorowania punktów
+        - Wykres pokaże:
+            - Korelację między zmiennymi
+            - Linię trendu
+            - Możliwe skupienia danych
+            - Wartości odstające
+        """)
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            x_col = st.selectbox(
+                "Zmienna X (oś pozioma)", 
+                numeric_cols,
+                help="Wybierz zmienną niezależną"
+            )
+        with col2:
+            y_col = st.selectbox(
+                "Zmienna Y (oś pionowa)", 
+                [col for col in numeric_cols if col != x_col],
+                help="Wybierz zmienną zależną"
+            )
+        
+        color_col = st.selectbox(
+            "Zmienna do kolorowania punktów (opcjonalnie)", 
+            ["Brak"] + categorical_cols + numeric_cols,
+            help="Kolorowanie pomoże wykryć dodatkowe wzorce"
+        )
         color_col = None if color_col == "Brak" else color_col
         
-        if st.button("Generuj wykres rozrzutu"):
+        if st.button("Generuj wykres rozrzutu", use_container_width=True):
             fig = create_scatter_plot(df, x_col, y_col, color_col)
             if fig:
                 st.plotly_chart(fig, use_container_width=True)
-    
+                
+                # Dodatkowe informacje
+                if color_col is None:
+                    corr = df[x_col].corr(df[y_col])
+                    st.info(f"""
+                    ### Interpretacja:
+                    - Korelacja: {corr:.2f}
+                    - {
+                        "Silna dodatnia" if corr > 0.7 else
+                        "Umiarkowana dodatnia" if corr > 0.3 else
+                        "Silna ujemna" if corr < -0.7 else
+                        "Umiarkowana ujemna" if corr < -0.3 else
+                        "Słaba"
+                    } zależność między zmiennymi
+                    """)
+
     elif chart_type == "Histogram":
+        st.write("""
+        ### Histogram - instrukcja:
+        - Wybierz zmienną numeryczną do analizy rozkładu
+        - Dostosuj liczbę przedziałów (bins) aby lepiej zobaczyć rozkład danych
+        - Wykres pokaże:
+            - Rozkład wartości zmiennej
+            - Częstość występowania wartości w przedziałach
+            - Możliwe skupienia i wartości odstające
+            - Kształt rozkładu (normalny, skośny, etc.)
+        """)
         col = st.selectbox("Wybierz kolumnę", numeric_cols)
         bins = st.slider("Liczba przedziałów", min_value=5, max_value=100, value=30)
         
@@ -373,6 +434,17 @@ def display_chart_ui(df):
                 st.plotly_chart(fig, use_container_width=True)
     
     elif chart_type == "Wykres słupkowy":
+        st.write("""
+        ### Wykres słupkowy - instrukcja:
+        - Wybierz zmienną kategoryczną (oś X)
+        - Wybierz zmienną numeryczną (oś Y)
+        - Wybierz funkcję agregującą:
+            - Średnia: średnia wartość dla każdej kategorii
+            - Mediana: wartość środkowa dla każdej kategorii
+            - Suma: suma wartości dla każdej kategorii
+            - Liczba: liczba wystąpień w każdej kategorii
+        - Idealne do porównywania wartości między kategoriami
+        """)
         if not categorical_cols:
             st.warning("Do wykresu słupkowego potrzebna jest co najmniej jedna kolumna kategoryczna.")
         else:
@@ -395,6 +467,20 @@ def display_chart_ui(df):
                     st.plotly_chart(fig, use_container_width=True)
     
     elif chart_type == "Mapa ciepła korelacji":
+        st.write("""
+        ### Mapa ciepła korelacji - instrukcja:
+        - Wybierz zmienne numeryczne do analizy korelacji
+        - Wykres pokaże:
+            - Siłę korelacji między wszystkimi wybranymi zmiennymi
+            - Wartości od -1 (silna korelacja ujemna) do 1 (silna korelacja dodatnia)
+            - 0 oznacza brak korelacji
+            - Kolory ciepłe (czerwone) - korelacja dodatnia
+            - Kolory zimne (niebieskie) - korelacja ujemna
+        - Użyteczne do:
+            - Identyfikacji silnie skorelowanych zmiennych
+            - Wykrywania wzorców w danych
+            - Wyboru zmiennych do analiz
+        """)
         selected_cols = st.multiselect("Wybierz kolumny numeryczne", numeric_cols, default=numeric_cols[:min(5, len(numeric_cols))])
         
         if st.button("Generuj mapę ciepła"):
@@ -406,6 +492,17 @@ def display_chart_ui(df):
                     st.pyplot(fig)
     
     elif chart_type == "Wykres kołowy":
+        st.write("""
+        ### Wykres kołowy - instrukcja:
+        - Wybierz zmienną kategoryczną
+        - Wykres pokaże:
+            - Procentowy udział każdej kategorii w całości
+            - Względne proporcje między kategoriami
+        - Najlepszy do:
+            - Pokazania struktury danych
+            - Porównania udziałów poszczególnych kategorii
+            - Danych, gdzie suma wszystkich części daje 100%
+        """)
         if not categorical_cols:
             st.warning("Do wykresu kołowego potrzebna jest co najmniej jedna kolumna kategoryczna.")
         else:
@@ -417,6 +514,19 @@ def display_chart_ui(df):
                     st.plotly_chart(fig, use_container_width=True)
     
     elif chart_type == "Wykres częstości kategorii":
+        st.write("""
+        ### Wykres częstości kategorii - instrukcja:
+        - Wybierz zmienną kategoryczną do analizy
+        - Określ liczbę najczęstszych kategorii do wyświetlenia
+        - Wykres pokaże:
+            - Liczbę wystąpień każdej kategorii
+            - Procentowy udział każdej kategorii
+            - Ranking kategorii od najczęstszej do najrzadszej
+        - Idealny do:
+            - Analizy popularności kategorii
+            - Identyfikacji dominujących wartości
+            - Wykrywania rzadkich przypadków
+        """)
         cat_col = st.selectbox("Wybierz kolumnę kategoryczną", categorical_cols, key='freq')
         top_n = st.slider("Liczba najczęstszych kategorii", 
                          min_value=5, 
@@ -430,6 +540,20 @@ def display_chart_ui(df):
                 st.plotly_chart(fig, use_container_width=True)
     
     elif chart_type == "Wykres porównawczy kategorii":
+        st.write("""
+        ### Wykres porównawczy kategorii - instrukcja:
+        - Wybierz zmienną kategoryczną do grupowania
+        - Wybierz zmienną numeryczną do porównania
+        - Określ liczbę kategorii do pokazania
+        - Wykres pokaże:
+            - Średnią wartość zmiennej numerycznej dla każdej kategorii
+            - Porównanie kategorii według wybranej miary
+            - Top N najczęstszych kategorii
+        - Przydatny do:
+            - Porównywania średnich wartości między kategoriami
+            - Identyfikacji kategorii o najwyższych/najniższych wartościach
+            - Analizy zależności między zmienną kategoryczną a numeryczną
+        """)
         if not categorical_cols:
             st.warning("Brak kolumn kategorycznych do wizualizacji.")
         else:
