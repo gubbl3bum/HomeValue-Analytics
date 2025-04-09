@@ -12,6 +12,15 @@ def load_csv_file(uploaded_file):
         # Sekcja przygotowania danych
         st.subheader("Przygotowanie danych")
         
+        # Usuwanie duplikatów
+        remove_duplicates_opt = st.checkbox(
+            "Usuń powtarzające się wiersze",
+            help="Usuwa wszystkie zduplikowane wiersze z danych"
+        )
+        
+        if remove_duplicates_opt:
+            df = remove_duplicates(df)
+        
         # Obsługa brakujących wartości
         handle_missing = st.checkbox(
             "Usuń wiersze z brakującymi wartościami",
@@ -29,7 +38,7 @@ def load_csv_file(uploaded_file):
         
         if scale_data:
             df = scale_numeric_data(df)
-            st.success("Dane zostały standaryzowane (średnia=0, odchylenie standardowe=1)")
+            st.success("Dane zostały standaryzowane")
             
         return df
         
@@ -233,5 +242,42 @@ def handle_missing_values(df):
         
     except Exception as e:
         st.error(f"Błąd podczas usuwania brakujących wartości: {e}")
+        return df
 
+def remove_duplicates(df):
+    """
+    Usuwa powtarzające się wiersze z DataFrame.
+    
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        DataFrame z danymi
+    
+    Returns:
+    --------
+    pandas.DataFrame
+        DataFrame bez powtarzających się wierszy
+    """
+    try:
+        # Kopiowanie DataFrame
+        cleaned_df = df.copy()
+        
+        # Liczba wierszy przed usunięciem duplikatów
+        original_rows = len(cleaned_df)
+        
+        # Usuwanie duplikatów
+        cleaned_df = cleaned_df.drop_duplicates()
+        
+        # Liczba usuniętych duplikatów
+        removed_rows = original_rows - len(cleaned_df)
+        
+        if removed_rows > 0:
+            st.success(f"Usunięto {removed_rows} powtarzających się wierszy. Pozostało {len(cleaned_df)} wierszy.")
+        else:
+            st.info("Brak powtarzających się wierszy w danych.")
+            
+        return cleaned_df
+        
+    except Exception as e:
+        st.error(f"Błąd podczas usuwania duplikatów: {e}")
         return df
