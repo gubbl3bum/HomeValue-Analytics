@@ -1,23 +1,28 @@
 import pandas as pd
 import streamlit as st
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
 def load_csv_file(uploaded_file):
     """
-    Wczytuje dane z pliku CSV.
-    
-    Parameters:
-    -----------
-    uploaded_file : UploadedFile
-        Plik CSV przesłany przez użytkownika
-    
-    Returns:
-    --------
-    pandas.DataFrame or None
-        DataFrame z załadowanymi danymi lub None w przypadku błędu
+    Wczytuje dane z pliku CSV z opcją standaryzacji.
     """
     try:
         df = pd.read_csv(uploaded_file)
+        
+        # Dodaj opcję standaryzacji
+        st.subheader("Przygotowanie danych")
+        
+        scale_data = st.checkbox(
+            "Standaryzuj dane numeryczne",
+            help="Standaryzacja (odjęcie średniej i podzielenie przez odchylenie standardowe) pomoże w analizie ML i wizualizacjach"
+        )
+        
+        if scale_data:
+            df = scale_numeric_data(df)
+            st.success("Dane zostały standaryzowane (średnia=0, odchylenie standardowe=1)")
+            
         return df
+        
     except Exception as e:
         st.error(f"Błąd podczas wczytywania pliku: {e}")
         return None
@@ -144,3 +149,40 @@ def get_column_types(df):
             'datetime': get_datetime_columns(df)
         }
     return {'numeric': [], 'categorical': [], 'datetime': []}
+
+def scale_numeric_data(df):
+    """
+    Standaryzuje kolumny numeryczne w DataFrame (odejmuje średnią i dzieli przez odchylenie standardowe).
+    
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        DataFrame z danymi
+    
+    Returns:
+    --------
+    pandas.DataFrame
+        DataFrame ze standaryzowanymi danymi numerycznymi
+    """
+    try:
+        # Kopiowanie DataFrame
+        scaled_df = df.copy()
+        
+        # Identyfikacja kolumn numerycznych (z wyjątkiem lat)
+        numeric_cols = df.select_dtypes(include=['number']).columns
+        year_cols = [col for col in numeric_cols if 'year' in col.lower()]
+        cols_to_scale = [col for col in numeric_cols if col not in year_cols]
+        
+        if not cols_to_scale:
+            return df
+            
+        # Standaryzacja danych
+        scaler = StandardScaler()
+        scaled_values = scaler.fit_transform(df[cols_to_scale])
+        scaled_df[cols_to_scale] = scaled_values
+        
+        return scaled_df
+        
+    except Exception as e:
+        st.error(f"Błąd podczas standaryzacji danych: {e}")
+        return df
