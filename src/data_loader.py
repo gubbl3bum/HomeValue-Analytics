@@ -4,14 +4,24 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 
 def load_csv_file(uploaded_file):
     """
-    Wczytuje dane z pliku CSV z opcją standaryzacji.
+    Wczytuje dane z pliku CSV z opcjami przygotowania danych.
     """
     try:
         df = pd.read_csv(uploaded_file)
         
-        # Dodaj opcję standaryzacji
+        # Sekcja przygotowania danych
         st.subheader("Przygotowanie danych")
         
+        # Obsługa brakujących wartości
+        handle_missing = st.checkbox(
+            "Usuń wiersze z brakującymi wartościami",
+            help="Usuwa wszystkie wiersze, które zawierają brakujące wartości"
+        )
+        
+        if handle_missing:
+            df = handle_missing_values(df)
+        
+        # Standaryzacja danych
         scale_data = st.checkbox(
             "Standaryzuj dane numeryczne",
             help="Standaryzacja (odjęcie średniej i podzielenie przez odchylenie standardowe) pomoże w analizie ML i wizualizacjach"
@@ -185,4 +195,43 @@ def scale_numeric_data(df):
         
     except Exception as e:
         st.error(f"Błąd podczas standaryzacji danych: {e}")
+        return df
+
+def handle_missing_values(df):
+    """
+    Usuwa wiersze z brakującymi wartościami z DataFrame.
+    
+    Parameters:
+    -----------
+    df : pandas.DataFrame
+        DataFrame z danymi
+    
+    Returns:
+    --------
+    pandas.DataFrame
+        DataFrame bez wierszy z brakującymi wartościami
+    """
+    try:
+        # Kopiowanie DataFrame
+        cleaned_df = df.copy()
+        
+        # Sprawdzenie liczby wierszy przed czyszczeniem
+        original_rows = len(cleaned_df)
+        
+        # Usuwanie wierszy z brakującymi wartościami
+        cleaned_df = cleaned_df.dropna()
+        
+        # Liczba usuniętych wierszy
+        removed_rows = original_rows - len(cleaned_df)
+        
+        if removed_rows > 0:
+            st.success(f"Usunięto {removed_rows} wierszy z brakującymi wartościami. Pozostało {len(cleaned_df)} wierszy.")
+        else:
+            st.info("Brak brakujących wartości w danych.")
+            
+        return cleaned_df
+        
+    except Exception as e:
+        st.error(f"Błąd podczas usuwania brakujących wartości: {e}")
+
         return df
