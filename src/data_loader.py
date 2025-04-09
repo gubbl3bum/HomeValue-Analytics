@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.preprocessing import LabelBinarizer
 
 def load_csv_file(uploaded_file):
     """
@@ -12,6 +13,7 @@ def load_csv_file(uploaded_file):
         # Sekcja przygotowania danych
         st.subheader("Przygotowanie danych")
         
+        # 1. Najpierw operacje czyszczące dane
         # Usuwanie duplikatów
         remove_duplicates_opt = st.checkbox(
             "Usuń powtarzające się wiersze",
@@ -29,16 +31,26 @@ def load_csv_file(uploaded_file):
         
         if handle_missing:
             df = handle_missing_values(df)
-        
-        # Standaryzacja danych
-        scale_data = st.checkbox(
-            "Standaryzuj dane numeryczne",
-            help="Standaryzacja (odjęcie średniej i podzielenie przez odchylenie standardowe) pomoże w analizie ML i wizualizacjach"
+            
+        # 2. Następnie operacje transformujące dane
+        transform_data = st.radio(
+            "Wybierz sposób transformacji danych:",
+            options=["Brak transformacji", 
+                    "Standaryzacja danych numerycznych", 
+                    "Kodowanie binarne kolumn kategorycznych"],
+            help="""
+            Uwaga: Wybierz tylko jedną opcję:
+            - Standaryzacja: przekształca dane numeryczne (średnia=0, odchylenie standardowe=1)
+            - Kodowanie binarne: zamienia kolumny kategoryczne na binarne (0/1)
+            """
         )
         
-        if scale_data:
+        if transform_data == "Standaryzacja danych numerycznych":
             df = scale_numeric_data(df)
             st.success("Dane zostały standaryzowane")
+        elif transform_data == "Kodowanie binarne kolumn kategorycznych":
+            df = encode_categorical_columns(df)
+            st.success("Kolumny kategoryczne zostały zakodowane binarnie")
             
         return df
         
@@ -280,4 +292,44 @@ def remove_duplicates(df):
         
     except Exception as e:
         st.error(f"Błąd podczas usuwania duplikatów: {e}")
+        return df
+
+def encode_categorical_columns(df):
+    """
+    Koduje kolumny kategoryczne do postaci binarnej, pomijając kolumny ID.
+    """
+    try:
+        # Kopiowanie DataFrame
+        encoded_df = df.copy()
+        
+        # Identyfikacja kolumn kategorycznych, pomijając kolumny zawierające 'id'
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
+        categorical_cols = [col for col in categorical_cols if 'id' not in col.lower()]
+        
+        if categorical_cols:
+            # Kodowanie każdej kolumny kategorycznej
+            lb = LabelBinarizer()
+            for col in categorical_cols:
+                # Kodowanie kolumny
+                encoded_values = lb.fit_transform(df[col])
+                
+                # Jeśli są tylko 2 klasy, przekształć do jednej kolumny
+                if len(lb.classes_) == 2:
+                    encoded_df[f"{col}_binary"] = encoded_values
+                else:
+                    # Dla więcej niż 2 klas, utwórz osobne kolumny dla każdej wartości
+                    for i, class_name in enumerate(lb.classes_):
+                        encoded_df[f"{col}_{class_name}"] = encoded_values[:, i]
+                
+                # Usunięcie oryginalnej kolumny
+                encoded_df = encoded_df.drop(columns=[col])
+            
+            st.success(f"Zakodowano {len(categorical_cols)} kolumn kategorycznych.")
+        else:
+            st.info("Brak kolumn kategorycznych do zakodowania.")
+            
+        return encoded_df
+        
+    except Exception as e:
+        st.error(f"Błąd podczas kodowania kolumn kategorycznych: {e}")
         return df
