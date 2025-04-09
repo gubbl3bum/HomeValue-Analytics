@@ -24,24 +24,48 @@ def load_csv_file(uploaded_file):
 
 def preview_data(df):
     """
-    Wyświetla edytowalny podgląd danych.
+    Wyświetla edytowalny podgląd danych z odpowiednim formatowaniem liczb.
     """
     if df is not None:
         st.write("Podgląd danych (kliknij w komórkę aby edytować):")
-        
-        # Używamy data_editor zamiast dataframe
+
+        # Przygotowanie konfiguracji kolumn
+        column_config = {}
+        for col in df.columns:
+            # Sprawdzenie czy nazwa kolumny zawiera "year" (bez względu na wielkość liter)
+            is_year_column = "year" in col.lower()
+
+            if pd.api.types.is_integer_dtype(df[col]) or is_year_column:
+                # Dla liczb całkowitych i kolumn z rokiem - bez separatorów tysięcy
+                column_config[col] = st.column_config.NumberColumn(
+                    col,
+                    format="%d",
+                    step=1
+                )
+                # Jeśli to kolumna z rokiem, konwertujemy wartości na int
+                if is_year_column and not pd.api.types.is_integer_dtype(df[col]):
+                    df[col] = pd.to_numeric(df[col], errors='coerce').astype('Int64')
+            elif pd.api.types.is_float_dtype(df[col]):
+                # Dla liczb zmiennoprzecinkowych - 2 miejsca po przecinku
+                column_config[col] = st.column_config.NumberColumn(
+                    col,
+                    format="%.2f",
+                    step=0.01
+                )
+        # Używamy data_editor z konfiguracją kolumn
         edited_df = st.data_editor(
             df,
             num_rows="dynamic",
             use_container_width=True,
-            hide_index=False
+            hide_index=False,
+            column_config=column_config
         )
-        
+
         # Jeśli dane zostały zmienione, aktualizujemy DataFrame
         if not edited_df.equals(df):
             st.success("Dane zostały zaktualizowane!")
             return edited_df
-        
+
         return df
     return None
 
