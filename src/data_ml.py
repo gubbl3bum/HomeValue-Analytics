@@ -271,11 +271,6 @@ def display_ml_ui(df):
                 if missing_features:
                     st.error(f"Brakujące kolumny w danych: {missing_features}")
                     return
-
-                # Upewnij się, że wszystkie wybrane kolumny kategoryczne mają te same kategorie
-                for col in selected_categorical:
-                    if df[col].isnull().any():
-                        st.warning(f"Kolumna {col} zawiera brakujące wartości. Zostaną one usunięte.")
         
                 # Czyszczenie danych
                 df_clean = df[selected_features + [target_col]].copy()
@@ -299,6 +294,26 @@ def display_ml_ui(df):
                 if unique_targets < 2:
                     st.error(f"Zmienna docelowa '{target_col}' ma tylko {unique_targets} unikalną wartość. Potrzebne są co najmniej 2 klasy.")
                     return
+
+                # Sprawdź liczebność klas przed treningiem
+                class_counts = df_clean[target_col].value_counts()
+                min_class_size = class_counts.min()
+                
+                # Dostosuj liczbę foldów do najmniejszej klasy
+                max_possible_folds = min(min_class_size, 10)
+                if cv_folds > max_possible_folds:
+                    cv_folds = max_possible_folds
+                    st.warning(f"Zmniejszono liczbę foldów do {cv_folds} ze względu na małą liczebność niektórych klas.")
+                
+                if min_class_size < 2:
+                    st.error(f"Niektóre klasy mają zbyt mało próbek (minimum 2 wymagane). Najmniejsza klasa ma {min_class_size} próbek.")
+                    st.write("Liczebność klas:")
+                    st.write(class_counts)
+                    return
+
+                # Wyświetl informację o liczebności klas
+                st.info("Liczebność klas:")
+                st.write(class_counts)
 
                 # Inicjalizacja modelu i przygotowanie danych
                 clf = ClassificationModel()
