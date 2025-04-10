@@ -5,49 +5,6 @@ import plotly.express as px
 import pandas as pd
 import numpy as np
 
-def create_scatter_plot(df, x_column, y_column, color_column=None, title="Wykres rozrzutu"):
-    """
-    Tworzy ulepszony wykres rozrzutu z dodatkowymi funkcjami.
-    """
-    try:
-        # Tworzenie podstawowego wykresu
-        fig = px.scatter(df, 
-                        x=x_column, 
-                        y=y_column,
-                        color=color_column,
-                        title=title,
-                        labels={
-                            x_column: f"{x_column}",
-                            y_column: f"{y_column}"
-                        },
-                        hover_data=df.columns)
-        
-        # Dodanie linii trendu
-        fig.add_traces(px.scatter(df, x=x_column, y=y_column, trendline="ols").data)
-        
-        # Obliczenie i dodanie korelacji do tytułu
-        if color_column is None:
-            corr = df[x_column].corr(df[y_column])
-            fig.update_layout(
-                title=f"{title}<br>Korelacja: {corr:.2f}"
-            )
-        
-        # Ulepszenie wyglądu
-        fig.update_layout(
-            plot_bgcolor='white',
-            margin=dict(t=100),
-            showlegend=True
-        )
-        
-        # Dodanie siatki
-        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='LightGray')
-        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='LightGray')
-        
-        return fig
-    except Exception as e:
-        st.error(f"Błąd podczas tworzenia wykresu rozrzutu: {e}")
-        return None
-
 def calculate_default_bins(df, column):
     """
     Oblicza sugerowaną liczbę przedziałów na podstawie danych.
@@ -356,65 +313,12 @@ def display_chart_ui(df):
     # Wybór typu wykresu
     chart_type = st.selectbox(
         "Wybierz typ wykresu",
-        ["Wykres rozrzutu", "Histogram", "Wykres słupkowy", 
+        ["Histogram", "Wykres słupkowy", 
          "Mapa ciepła korelacji", "Wykres kołowy", "Wykres częstości kategorii", "Wykres porównawczy kategorii"]
     )
     
     # Tworzenie wykresu w zależności od typu
-    if chart_type == "Wykres rozrzutu":
-        st.write("""
-        ### Wykres rozrzutu - instrukcja:
-        - Wybierz dwie zmienne numeryczne do porównania
-        - Opcjonalnie wybierz zmienną do kolorowania punktów
-        - Wykres pokaże:
-            - Korelację między zmiennymi
-            - Linię trendu
-            - Możliwe skupienia danych
-            - Wartości odstające
-        """)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            x_col = st.selectbox(
-                "Zmienna X (oś pozioma)", 
-                numeric_cols,
-                help="Wybierz zmienną niezależną"
-            )
-        with col2:
-            y_col = st.selectbox(
-                "Zmienna Y (oś pionowa)", 
-                [col for col in numeric_cols if col != x_col],
-                help="Wybierz zmienną zależną"
-            )
-        
-        color_col = st.selectbox(
-            "Zmienna do kolorowania punktów (opcjonalnie)", 
-            ["Brak"] + categorical_cols + numeric_cols,
-            help="Kolorowanie pomoże wykryć dodatkowe wzorce"
-        )
-        color_col = None if color_col == "Brak" else color_col
-        
-        if st.button("Generuj wykres rozrzutu", use_container_width=True):
-            fig = create_scatter_plot(df, x_col, y_col, color_col)
-            if fig:
-                st.plotly_chart(fig, use_container_width=True)
-                
-                # Dodatkowe informacje
-                if color_col is None:
-                    corr = df[x_col].corr(df[y_col])
-                    st.info(f"""
-                    ### Interpretacja:
-                    - Korelacja: {corr:.2f}
-                    - {
-                        "Silna dodatnia" if corr > 0.7 else
-                        "Umiarkowana dodatnia" if corr > 0.3 else
-                        "Silna ujemna" if corr < -0.7 else
-                        "Umiarkowana ujemna" if corr < -0.3 else
-                        "Słaba"
-                    } zależność między zmiennymi
-                    """)
-
-    elif chart_type == "Histogram":
+    if chart_type == "Histogram":
         st.write("""
         ### Histogram - instrukcja:
         - Wybierz zmienną numeryczną do analizy rozkładu
