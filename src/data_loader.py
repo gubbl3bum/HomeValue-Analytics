@@ -32,25 +32,27 @@ def load_csv_file(uploaded_file):
         if handle_missing:
             df = handle_missing_values(df)
             
-        # 2. Następnie operacje transformujące dane
-        transform_data = st.radio(
-            "Wybierz sposób transformacji danych:",
-            options=["Brak transformacji", 
-                    "Standaryzacja danych numerycznych", 
-                    "Kodowanie binarne kolumn kategorycznych"],
-            help="""
-            Uwaga: Wybierz tylko jedną opcję:
-            - Standaryzacja: przekształca dane numeryczne (średnia=0, odchylenie standardowe=1)
-            - Kodowanie binarne: zamienia kolumny kategoryczne na binarne (0/1)
-            """
+        # 2. Opcje transformacji danych
+        st.write("Wybierz opcje transformacji danych:")
+        
+        standardize_numeric = st.checkbox(
+            "Standaryzacja danych numerycznych",
+            help="Przekształca dane numeryczne (średnia=0, odchylenie standardowe=1)"
         )
         
-        if transform_data == "Standaryzacja danych numerycznych":
+        encode_categorical = st.checkbox(
+            "Kodowanie kolumn kategorycznych",
+            help="Zamienia kolumny kategoryczne na binarne (0/1), one-hot lub ordinalne"
+        )
+        
+        # Wykonanie transformacji w odpowiedniej kolejności
+        if standardize_numeric:
             df = scale_numeric_data(df)
-            st.success("Dane zostały standaryzowane")
-        elif transform_data == "Kodowanie binarne kolumn kategorycznych":
+            st.success("Dane numeryczne zostały standaryzowane")
+            
+        if encode_categorical:
             df = encode_categorical_columns(df)
-            st.success("Kolumny kategoryczne zostały zakodowane binarnie")
+            st.success("Kolumny kategoryczne zostały zakodowane")
             
         return df
         
@@ -184,25 +186,17 @@ def get_column_types(df):
 def scale_numeric_data(df):
     """
     Standaryzuje kolumny numeryczne w DataFrame (odejmuje średnią i dzieli przez odchylenie standardowe).
-    
-    Parameters:
-    -----------
-    df : pandas.DataFrame
-        DataFrame z danymi
-    
-    Returns:
-    --------
-    pandas.DataFrame
-        DataFrame ze standaryzowanymi danymi numerycznymi
     """
     try:
         # Kopiowanie DataFrame
         scaled_df = df.copy()
         
-        # Identyfikacja kolumn numerycznych (z wyjątkiem lat)
+        # Identyfikacja kolumn numerycznych (z wyjątkiem lat i kolumn binarnych)
         numeric_cols = df.select_dtypes(include=['number']).columns
-        year_cols = [col for col in numeric_cols if 'year' in col.lower()]
-        cols_to_scale = [col for col in numeric_cols if col not in year_cols]
+        # Wykluczamy kolumny z latami i kolumny binarne (0/1)
+        cols_to_exclude = [col for col in numeric_cols if 'year' in col.lower()]
+        cols_to_exclude.extend([col for col in numeric_cols if df[col].nunique() == 2 and set(df[col].unique()).issubset({0, 1})])
+        cols_to_scale = [col for col in numeric_cols if col not in cols_to_exclude]
         
         if not cols_to_scale:
             return df
@@ -296,37 +290,72 @@ def remove_duplicates(df):
 
 def encode_categorical_columns(df):
     """
-    Koduje kolumny kategoryczne do postaci binarnej, pomijając kolumny ID.
+    Koduje kolumny kategoryczne na wartości binarne tam, gdzie to możliwe.
+    Dla kolumn z więcej niż dwiema wartościami używa prostego kodowania ordynalnego.
     """
     try:
         # Kopiowanie DataFrame
         encoded_df = df.copy()
         
-        # Identyfikacja kolumn kategorycznych, pomijając kolumny zawierające 'id'
-        categorical_cols = df.select_dtypes(include=['object', 'category']).columns
-        categorical_cols = [col for col in categorical_cols if 'id' not in col.lower()]
+        # Identyfikacja wszystkich kolumn kategorycznych
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        
+        # Filtrujemy kolumny, które już zostały zakodowane lub są ID
+        categorical_cols = [col for col in categorical_cols 
+                           if not any(c.startswith(f"{col}_") for c in df.columns) 
+                           and 'id' not in col.lower()]
         
         if categorical_cols:
-            # Kodowanie każdej kolumny kategorycznej
-            lb = LabelBinarizer()
-            for col in categorical_cols:
-                # Kodowanie kolumny
-                encoded_values = lb.fit_transform(df[col])
-                
-                # Jeśli są tylko 2 klasy, przekształć do jednej kolumny
-                if len(lb.classes_) == 2:
-                    encoded_df[f"{col}_binary"] = encoded_values
-                else:
-                    # Dla więcej niż 2 klas, utwórz osobne kolumny dla każdej wartości
-                    for i, class_name in enumerate(lb.classes_):
-                        encoded_df[f"{col}_{class_name}"] = encoded_values[:, i]
-                
-                # Usunięcie oryginalnej kolumny
-                encoded_df = encoded_df.drop(columns=[col])
+            from sklearn.preprocessing import LabelEncoder
+            import pandas as pd
+            import numpy as np
             
-            st.success(f"Zakodowano {len(categorical_cols)} kolumn kategorycznych.")
+            # Wyświetlamy informację o znalezionych kolumnach kategorycznych
+            st.info(f"Znaleziono {len(categorical_cols)} kolumn kategorycznych do zakodowania: {', '.join(categorical_cols)}")
+            
+            for col in categorical_cols:
+                try:
+                    # Konwertujemy wartości na stringi przed kodowaniem (pomijając NaN)
+                    values_to_encode = df[col].astype(str)
+                    values_to_encode = values_to_encode.replace('nan', np.nan)
+                    
+                    unique_values = values_to_encode.dropna().nunique()
+                    
+                    # Sprawdzamy czy kolumna ma tylko 2 unikalne wartości (binarna)
+                    if unique_values == 2:
+                        # Pobieramy dwie unikalne wartości
+                        values_list = values_to_encode.dropna().unique().tolist()                        
+                        # Kodujemy pierwszą wartość jako 0, drugą jako 1
+                        first_value, second_value = values_list
+                        encoded_df[col] = values_to_encode.map(
+                            lambda x: 0 if x == first_value else (1 if x == second_value else np.nan)
+                        ).astype('Int64')  # Używamy Int64 aby obsłużyć NaN
+
+                    else:
+                        # Dla kolumn z więcej niż 2 wartościami stosujemy proste kodowanie numeryczne
+                        # Używamy LabelEncoder dla prostego kodowania numerycznego
+                        encoder = LabelEncoder()
+                        
+                        # Przygotowujemy dane do kodowania (tylko niepuste wartości)
+                        temp_values = values_to_encode.copy()
+                        non_null_mask = temp_values.notna()
+                        
+                        if non_null_mask.any():
+                            # Kodujemy tylko niepuste wartości
+                            encoded_values = pd.Series(index=temp_values.index, data=np.nan)
+                            encoded_values.loc[non_null_mask] = encoder.fit_transform(temp_values[non_null_mask])
+                            
+                            # Zapisujemy zakodowane wartości
+                            encoded_df[col] = encoded_values.astype('Int64')
+                            
+                            # Wyświetlamy mapowanie wartości
+                            mapping = {i: label for i, label in enumerate(encoder.classes_)}                                                
+                except Exception as e:
+                    st.warning(f"Nie udało się zakodować kolumny {col}: {str(e)}")
+                    continue
+            
         else:
-            st.info("Brak kolumn kategorycznych do zakodowania.")
+            st.info("Nie znaleziono kolumn kategorycznych do zakodowania")
             
         return encoded_df
         
