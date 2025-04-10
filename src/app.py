@@ -29,34 +29,46 @@ logging.basicConfig(
 STREAMLIT_PORT = 8501
 STREAMLIT_URL = f"http://localhost:{STREAMLIT_PORT}"
 
-# Zmień definicje ścieżek
-if getattr(sys, 'frozen', False):  
+# Path handling for both development and frozen environments
+if getattr(sys, 'frozen', False):
     BASE_DIR = sys._MEIPASS
-    MAIN_SCRIPT = os.path.join(BASE_DIR, "main.py")
-    STREAMLIT_PATH = os.path.join(BASE_DIR, "streamlit.exe")
+    MAIN_SCRIPT = os.path.join(BASE_DIR, "src", "main.py")  # Changed path
+    STREAMLIT_EXE = os.path.join(BASE_DIR, "streamlit.exe")
 else:
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # Zmiana tutaj
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     MAIN_SCRIPT = os.path.join(BASE_DIR, "src", "main.py")
-    STREAMLIT_PATH = "streamlit"  # Zmiana tutaj - użyj samej nazwy komendy
+    STREAMLIT_EXE = "streamlit"
 
 # Function to run Streamlit
 def run_streamlit():
     try:
         logging.info(f"Starting Streamlit server with script: {MAIN_SCRIPT}")
         
-        cmd = ["streamlit", "run", MAIN_SCRIPT, 
-               "--server.port", str(STREAMLIT_PORT), 
-               "--server.headless", "true"]
+        if getattr(sys, 'frozen', False):
+            cmd = [STREAMLIT_EXE, "run", MAIN_SCRIPT, 
+                  "--server.port", str(STREAMLIT_PORT), 
+                  "--server.headless", "true"]
+        else:
+            cmd = ["streamlit", "run", MAIN_SCRIPT, 
+                  "--server.port", str(STREAMLIT_PORT), 
+                  "--server.headless", "true"]
+        
+        # Check if file exists
+        if not os.path.exists(MAIN_SCRIPT):
+            logging.error(f"Main script not found at: {MAIN_SCRIPT}")
+            return
+            
+        logging.info(f"Running command: {' '.join(cmd)}")
         
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            shell=True  # Dodaj to dla Windows
+            shell=True
         )
         
-        # Monitorowanie outputu
+        # Monitor output
         for line in process.stdout:
             logging.info(f"STREAMLIT: {line.strip()}")
         for line in process.stderr:
@@ -64,6 +76,7 @@ def run_streamlit():
             
     except Exception as e:
         logging.error(f"Error starting Streamlit: {str(e)}")
+        logging.exception("Full traceback:")
 
 # Start Streamlit in a separate thread
 threading.Thread(target=run_streamlit, daemon=True).start()
