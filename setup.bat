@@ -21,13 +21,13 @@ pip install -r requirements.txt
 
 REM Build executable
 echo Building application...
-pyinstaller --onefile --windowed --clean --add-binary ".venv/Scripts/streamlit.exe;." --add-data "src;src" src/app.py
+pyinstaller --onefile --clean --add-binary ".venv/Scripts/streamlit.exe;." --add-data "src;src" src/app.py
 
 REM Create shortcut if requested
 set /p create_shortcut="Create shortcut on Desktop? (Y/N): "
 if /i "%create_shortcut%"=="Y" (
     echo Creating desktop shortcut...
-    powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([System.IO.Path]::Combine($env:USERPROFILE, 'Desktop', 'HomeValue-Analytics.lnk')); $s.TargetPath = '%cd%\dist\HomeValue-Analytics.exe'; $s.WorkingDirectory = '%cd%\dist'; $s.Save()"
+    powershell -Command "$ws = New-Object -ComObject WScript.Shell; $s = $ws.CreateShortcut([System.IO.Path]::Combine($env:USERPROFILE, 'Desktop', 'HomeValue-Analytics.lnk')); $s.TargetPath = '%cd%\dist\app.exe'; $s.WorkingDirectory = '%cd%\dist'; $s.Save()"
     if errorlevel 1 (
         echo Failed to create shortcut!
     ) else (
