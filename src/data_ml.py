@@ -136,7 +136,7 @@ class ClassificationModel:
 
 def plot_confusion_matrix(conf_matrix, class_names):
     """
-    Tworzy interaktywną wizualizację macierzy pomyłek.
+    Tworzy wizualizację macierzy pomyłek bez kolorów.
     """
     try:
         # Konwersja macierzy pomyłek na numpy array
@@ -147,8 +147,7 @@ def plot_confusion_matrix(conf_matrix, class_names):
             z=conf_matrix,
             x=list(class_names),  # Konwersja na listę
             y=list(class_names),  # Konwersja na listę
-            colorscale='Viridis',
-            showscale=True
+            showscale=False  # Usunięcie skali kolorów
         )
         
         # Aktualizacja układu
