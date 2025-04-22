@@ -10,11 +10,6 @@ def load_csv_file(uploaded_file):
     try:
         df = pd.read_csv(uploaded_file)
         
-        # Usuwanie kolumny ID jeśli istnieje
-        id_columns = [col for col in df.columns if 'id' in col.lower()]
-        if id_columns:
-            df = df.drop(columns=id_columns)
-
         # Sekcja przygotowania danych
         st.subheader("Przygotowanie danych")
         
