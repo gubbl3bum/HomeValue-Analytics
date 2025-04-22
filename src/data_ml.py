@@ -182,20 +182,20 @@ def display_ml_ui(df):
     numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
     categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
     
-    # Wybór cech
-    st.write("### 1. Wybór zmiennych")
+    # Wybór atrybutów
+    st.write("### 1. Wybór atrybutów")
     col1, col2 = st.columns(2)
     
     with col1:
         selected_numeric = st.multiselect(
-            "Wybierz cechy numeryczne",
+            "Wybierz atrybuty numeryczne",
             numeric_cols,
             default=numeric_cols[:2] if len(numeric_cols) > 2 else numeric_cols
         )
     
     with col2:
         selected_categorical = st.multiselect(
-            "Wybierz cechy kategoryczne",
+            "Wybierz atrybuty kategoryczne",
             categorical_cols,
             default=[]
         )
