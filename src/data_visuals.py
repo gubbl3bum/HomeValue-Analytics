@@ -346,8 +346,8 @@ def display_chart_ui(df):
             - Średnia: średnia wartość dla każdej kategorii
             - Mediana: wartość środkowa dla każdej kategorii
             - Suma: suma wartości dla każdej kategorii
-            - Liczba: liczba wystąpień w każdej kategorii
-        - Idealne do porównywania wartości między kategoriami
+            - Liczba wystąpień: liczba elementów w każdej kategorii
+        - Oś OY przedstawia wartości numeryczne po zastosowaniu wybranej funkcji agregującej.
         """)
         if not categorical_cols:
             st.warning("Do wykresu słupkowego potrzebna jest co najmniej jedna kolumna kategoryczna.")
