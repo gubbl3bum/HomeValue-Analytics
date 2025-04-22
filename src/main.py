@@ -15,9 +15,11 @@ uploaded_file = st.file_uploader("Wybierz plik CSV", type="csv")
 
 if uploaded_file:
     # Ładowanie danych przy użyciu funkcji z modułu data_loader
-    df = load_csv_file(uploaded_file)
+    df, row_count = load_csv_file(uploaded_file)
 
     if df is not None:
+        st.success(f"Plik został wczytany pomyślnie! Liczba wierszy: {row_count}")
+        
         # Wyświetlanie i edycja podglądu danych
         df = preview_data(df)
 
