@@ -44,17 +44,23 @@ def compute_basic_statistics(df, columns):
 
     return stats
 
-def compute_correlation_matrix(df, selected_columns):
+def compute_correlation_matrix(df, selected_columns, method='pearson'):
     """
     Oblicza macierz korelacji między wybranymi kolumnami.
     :param df: DataFrame z danymi
     :param selected_columns: Lista kolumn do analizy korelacji
+    :param method: Metoda korelacji ('pearson', 'kendall', 'spearman')
     :return: DataFrame z macierzą korelacji
     """
     if not selected_columns or len(selected_columns) < 2:
         return None
 
-    return df[selected_columns].corr()
+    # Filtruj tylko kolumny numeryczne
+    numeric_columns = df[selected_columns].select_dtypes(include=['number']).columns
+    if len(numeric_columns) < 2:
+        raise ValueError("Do obliczenia korelacji wymagane są co najmniej dwie kolumny numeryczne.")
+
+    return df[numeric_columns].corr(method=method)
 
 def analyze_categorical_columns(df, categorical_columns):
     """

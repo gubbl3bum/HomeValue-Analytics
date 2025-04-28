@@ -9,6 +9,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, classification_report
 import plotly.figure_factory as ff
 import plotly.express as px
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 
 class ClassificationModel:
     def __init__(self):
@@ -133,6 +135,22 @@ class ClassificationModel:
         except Exception as e:
             st.error(f"Błąd podczas ewaluacji modelu: {str(e)}")
             return None
+
+def train_svm(X_train, y_train, kernel='linear'):
+    """
+    Trenuje model SVM.
+    """
+    model = SVC(kernel=kernel)
+    model.fit(X_train, y_train)
+    return model
+
+def train_knn(X_train, y_train, n_neighbors=5):
+    """
+    Trenuje model KNN.
+    """
+    model = KNeighborsClassifier(n_neighbors=n_neighbors)
+    model.fit(X_train, y_train)
+    return model
 
 def plot_confusion_matrix(conf_matrix, class_names):
     """

@@ -286,6 +286,21 @@ def create_category_comparison_plot(df, cat_column, value_column, top_n=10, titl
         st.error(f"Błąd podczas tworzenia wykresu porównawczego: {e}")
         return None
 
+def create_violin_plot(df, x_column, y_column, title="Violin Plot"):
+    """
+    Tworzy wykres violin plot.
+    """
+    fig = px.violin(df, x=x_column, y=y_column, box=True, points="all", title=title)
+    return fig
+
+def create_pair_plot(df, columns, title="Pair Plot"):
+    """
+    Tworzy wykres pair plot.
+    """
+    fig = sns.pairplot(df[columns])
+    fig.fig.suptitle(title, y=1.02)
+    return fig
+
 def display_chart_ui(df):
     """
     Wyświetla interfejs użytkownika do tworzenia wykresów.
