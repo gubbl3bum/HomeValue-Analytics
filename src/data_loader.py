@@ -9,12 +9,8 @@ def load_csv_file(uploaded_file):
     """
     try:
         df = pd.read_csv(uploaded_file)
+        row_count = len(df)  # Liczba wierszy w DataFrame
         
-        # Usuwanie kolumny ID jeśli istnieje
-        id_columns = [col for col in df.columns if 'id' in col.lower()]
-        if id_columns:
-            df = df.drop(columns=id_columns)
-
         # Sekcja przygotowania danych
         st.subheader("Przygotowanie danych")
         
@@ -59,11 +55,11 @@ def load_csv_file(uploaded_file):
             df = encode_categorical_columns(df)
             st.success("Kolumny kategoryczne zostały zakodowane")
             
-        return df
+        return df, row_count  # Zwracamy również liczbę wierszy
         
     except Exception as e:
         st.error(f"Błąd podczas wczytywania pliku: {e}")
-        return None
+        return None, 0
 
 def preview_data(df):
     """

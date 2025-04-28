@@ -9,6 +9,8 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix, classification_report
 import plotly.figure_factory as ff
 import plotly.express as px
+from sklearn.svm import SVC
+from sklearn.neighbors import KNeighborsClassifier
 
 class ClassificationModel:
     def __init__(self):
@@ -134,9 +136,25 @@ class ClassificationModel:
             st.error(f"Błąd podczas ewaluacji modelu: {str(e)}")
             return None
 
+def train_svm(X_train, y_train, kernel='linear'):
+    """
+    Trenuje model SVM.
+    """
+    model = SVC(kernel=kernel)
+    model.fit(X_train, y_train)
+    return model
+
+def train_knn(X_train, y_train, n_neighbors=5):
+    """
+    Trenuje model KNN.
+    """
+    model = KNeighborsClassifier(n_neighbors=n_neighbors)
+    model.fit(X_train, y_train)
+    return model
+
 def plot_confusion_matrix(conf_matrix, class_names):
     """
-    Tworzy interaktywną wizualizację macierzy pomyłek.
+    Tworzy wizualizację macierzy pomyłek bez kolorów.
     """
     try:
         # Konwersja macierzy pomyłek na numpy array
@@ -147,8 +165,7 @@ def plot_confusion_matrix(conf_matrix, class_names):
             z=conf_matrix,
             x=list(class_names),  # Konwersja na listę
             y=list(class_names),  # Konwersja na listę
-            colorscale='Viridis',
-            showscale=True
+            showscale=False  # Usunięcie skali kolorów
         )
         
         # Aktualizacja układu
@@ -182,20 +199,20 @@ def display_ml_ui(df):
     numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
     categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
     
-    # Wybór cech
-    st.write("### 1. Wybór zmiennych")
+    # Wybór atrybutów
+    st.write("### 1. Wybór atrybutów")
     col1, col2 = st.columns(2)
     
     with col1:
         selected_numeric = st.multiselect(
-            "Wybierz cechy numeryczne",
+            "Wybierz atrybuty numeryczne",
             numeric_cols,
             default=numeric_cols[:2] if len(numeric_cols) > 2 else numeric_cols
         )
     
     with col2:
         selected_categorical = st.multiselect(
-            "Wybierz cechy kategoryczne",
+            "Wybierz atrybuty kategoryczne",
             categorical_cols,
             default=[]
         )
