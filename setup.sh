@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 # Build executable
 echo "Building executable..."
-pyinstaller --onefile --clean --add-data "src:src" src/app.py
+pyinstaller --onefile --noconsole --clean --add-data "src:src" src/app.py
 
 # Ask about shortcut creation
 read -p "Do you want to create a shortcut? (y/N): " create_shortcut

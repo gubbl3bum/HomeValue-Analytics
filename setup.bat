@@ -21,7 +21,7 @@ pip install -r requirements.txt
 
 REM Build executable
 echo Building application...
-pyinstaller --onefile --clean --add-binary ".venv/Scripts/streamlit.exe;." --add-data "src;src" src/app.py
+pyinstaller --onefile --noconsole --clean --add-binary ".venv/Scripts/streamlit.exe;." --add-data "src;src" src/app.py
 
 REM Create shortcut if requested
 set /p create_shortcut="Create shortcut on Desktop? (Y/N): "
