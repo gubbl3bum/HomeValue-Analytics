@@ -32,7 +32,7 @@ STREAMLIT_URL = f"http://localhost:{STREAMLIT_PORT}"
 # Path handling for both development and frozen environments
 if getattr(sys, 'frozen', False):
     BASE_DIR = sys._MEIPASS
-    MAIN_SCRIPT = os.path.join(BASE_DIR, "src", "main.py")  # Changed path
+    MAIN_SCRIPT = os.path.join(BASE_DIR, "src", "main.py")
     STREAMLIT_EXE = os.path.join(BASE_DIR, "streamlit.exe")
 else:
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -60,13 +60,30 @@ def run_streamlit():
             
         logging.info(f"Running command: {' '.join(cmd)}")
         
-        process = subprocess.Popen(
-            cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            shell=True
-        )
+        # ZMIANA TUTAJ: Usunięto shell=True i dodano creationflags
+        startupinfo = None
+        if sys.platform == 'win32':
+            # Ukryj okno konsoli na Windows
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+            
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                startupinfo=startupinfo,
+                creationflags=subprocess.CREATE_NO_WINDOW  # Dodatkowa flaga dla ukrycia okna konsoli
+            )
+        else:
+            # Na innych systemach operacyjnych
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
         
         # Monitor output
         for line in process.stdout:
