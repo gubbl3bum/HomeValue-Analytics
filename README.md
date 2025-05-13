@@ -13,13 +13,13 @@ Analytic tool for housing prices from given CSV files. Application provides comp
   * Numeric range filters
   * Categorical value filters
   * Missing value handling
-  * Subtable extraction
+  * Subtable extraction (general filtering for exploration)
+  * Machine learning-specific extraction (feature selection, target variable preparation)
 
 * **Statistical Analysis**
-  * Basic statistics (mean, median, std, etc.)
-  * Correlation analysis
-  * Categorical data analysis
-  * Price per square meter calculations
+  * **Descriptive Statistics**: Mean, median, standard deviation, etc.
+  * **Correlation Analysis**: Correlation heatmaps and pairwise correlations.
+  * **Categorical Analysis**: Frequency distributions, price per square meter, etc.
 
 * **Data Visualization**
   * Scatter plots
