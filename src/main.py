@@ -1,6 +1,8 @@
 import streamlit as st
 from data_stats import display_statistics_ui, compute_correlation_matrix
-from data_loader import load_csv_file, preview_data
+from data_loader import (
+    load_csv_file, preview_data, scale_numeric_data, encode_categorical_columns
+)
 from data_visuals import display_chart_ui, create_violin_plot, create_pair_plot
 from data_ml import display_ml_ui
 from data_filter import display_subtable_ui
@@ -22,7 +24,21 @@ if uploaded_file:
     if df is not None:
         st.success(f"Plik został wczytany pomyślnie! Liczba wierszy: {row_count}")
         
+        # Opcje transformacji danych
+        st.header("Transformacja danych")
+        
+        # Standaryzacja danych numerycznych
+        if st.checkbox("Standaryzacja danych numerycznych"):
+            df = scale_numeric_data(df)
+            st.success("Dane numeryczne zostały standaryzowane.")
+        
+        # Kodowanie kolumn kategorycznych
+        if st.checkbox("Kodowanie kolumn kategorycznych"):
+            df = encode_categorical_columns(df)
+            st.success("Kolumny kategoryczne zostały zakodowane.")
+        
         # Wyświetlanie i edycja podglądu danych
+        st.header("Podgląd danych")
         df = preview_data(df)
 
         # Sekcja ekstrakcji podtablic
@@ -43,25 +59,25 @@ if uploaded_file:
         tab1, tab2, tab3 = st.tabs(["Statystyki", "Wizualizacje", "Machine Learning"])
 
         with tab1:
-            # Używamy odpowiedniego zestawu danych
-            display_statistics_ui(working_df)
+            # Tworzymy kolumny dla statystyk opisowych i kategorycznych
+            col1, col2 = st.columns(2)
 
-            # Korelacja
-            st.subheader("Korelacja")
-            method = st.selectbox("Metoda korelacji", ["pearson", "kendall", "spearman"])
+            with col1:
+                st.subheader("Statystyki opisowe")
+                display_statistics_ui(working_df, analysis_type="descriptive")
+
+            with col2:
+                st.subheader("Analiza kategoryczna")
+                display_statistics_ui(working_df, analysis_type="categorical")
+
+            # Analiza korelacji w oddzielnej sekcji
+            st.subheader("Analiza korelacji")
             numeric_columns = working_df.select_dtypes(include=['number']).columns
             selected_columns = st.multiselect("Wybierz kolumny do analizy korelacji", numeric_columns)
+            method = st.selectbox("Metoda korelacji", ["pearson", "kendall", "spearman"])
             if st.button("Oblicz korelację"):
                 corr_matrix = compute_correlation_matrix(working_df, selected_columns, method)
                 st.write(corr_matrix)
-
-            # Wypełnianie braków
-            st.subheader("Wypełnianie braków")
-            column = st.selectbox("Kolumna do wypełnienia", working_df.columns)
-            fill_method = st.selectbox("Metoda wypełniania", ["mean", "median", "mode"])
-            if st.button("Wypełnij braki"):
-                working_df = fill_missing_values(working_df, column, fill_method)
-                st.write(working_df)
 
         with tab2:
             # Sekcja wizualizacji danych

@@ -134,71 +134,61 @@ def analyze_price_per_sqm(df, price_column, area_column):
     return stats
 
 
-def display_statistics_ui(df):
+def display_statistics_ui(df, analysis_type="descriptive"):
     """
-    Wyświetla interfejs użytkownika do analizy statystycznej.
+    Wyświetla interfejs użytkownika do analizy statystycznej w zależności od typu analizy.
     
     Parameters:
     -----------
     df : pandas.DataFrame
         DataFrame z danymi
+    analysis_type : str
+        Typ analizy: "descriptive", "correlation", "categorical"
     """
     if df is None or df.empty:
         st.warning("Brak danych do analizy.")
         return
 
-    # Podział kolumn na numeryczne i kategoryczne
-    numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
-    categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+    if analysis_type == "descriptive":
+        # Analiza statystyk opisowych
+        numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+        st.subheader("Analiza kolumn numerycznych 📊")
+        if numeric_cols:
+            selected_numeric_cols = st.multiselect(
+                "Wybierz kolumny numeryczne do analizy",
+                numeric_cols,
+                default=numeric_cols[:min(3, len(numeric_cols))]
+            )
+            if st.button("Oblicz statystyki numeryczne", key="descriptive_stats"):
+                stats = compute_basic_statistics(df, selected_numeric_cols)
+                if stats is not None:
+                    st.dataframe(stats)
+        else:
+            st.info("Brak kolumn numerycznych w zbiorze danych.")
 
-    # Sekcja dla kolumn numerycznych
-    st.subheader("Analiza kolumn numerycznych 📊")
-    if numeric_cols:
-        selected_numeric_cols = st.multiselect(
-            "Wybierz kolumny numeryczne do analizy",
-            numeric_cols,
-            default=numeric_cols[:min(3, len(numeric_cols))]
-        )
-
-        if st.button("Oblicz statystyki numeryczne"):
-            stats = compute_basic_statistics(df, selected_numeric_cols)
-            if stats is not None:
-                st.dataframe(stats)
-
-                # Macierz korelacji
-                if len(selected_numeric_cols) > 1:
-                    st.subheader("Macierz korelacji")
-                    corr_matrix = compute_correlation_matrix(df, selected_numeric_cols)
-                    st.dataframe(corr_matrix)
-    else:
-        st.info("Brak kolumn numerycznych w zbiorze danych.")
-
-    # Sekcja dla kolumn kategorycznych
-    st.subheader("Analiza kolumn kategorycznych 📑")
-    if categorical_cols:
-        selected_cat_cols = st.multiselect(
-            "Wybierz kolumny kategoryczne do analizy",
-            categorical_cols,
-            default=categorical_cols[:min(3, len(categorical_cols))]
-        )
-
-        if st.button("Oblicz statystyki kategoryczne"):
-            cat_stats = analyze_categorical_columns(df, selected_cat_cols)
-            if cat_stats:
-                for col, stats in cat_stats.items():
-                    st.write(f"\n### {col}")
-
-                    # Podstawowe informacje
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Liczba unikalnych wartości", stats['unique_count'])
-                    with col2:
-                        st.metric("Liczba braków danych", stats['null_count'])
-                    with col3:
-                        st.metric("Najczęstsza wartość", stats['mode'])
-
-                    # Tabela częstości
-                    st.write("Rozkład wartości:")
-                    st.dataframe(stats['value_counts'])
-    else:
-        st.info("Brak kolumn kategorycznych w zbiorze danych.")
+    elif analysis_type == "categorical":
+        # Analiza kolumn kategorycznych
+        categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
+        st.subheader("Analiza kolumn kategorycznych 📑")
+        if categorical_cols:
+            selected_cat_cols = st.multiselect(
+                "Wybierz kolumny kategoryczne do analizy",
+                categorical_cols,
+                default=categorical_cols[:min(3, len(categorical_cols))]
+            )
+            if st.button("Oblicz statystyki kategoryczne", key="categorical_stats"):
+                cat_stats = analyze_categorical_columns(df, selected_cat_cols)
+                if cat_stats:
+                    for col, stats in cat_stats.items():
+                        st.write(f"\n### {col}")
+                        col1, col2, col3 = st.columns(3)
+                        with col1:
+                            st.metric("Liczba unikalnych wartości", stats['unique_count'])
+                        with col2:
+                            st.metric("Liczba braków danych", stats['null_count'])
+                        with col3:
+                            st.metric("Najczęstsza wartość", stats['mode'])
+                        st.write("Rozkład wartości:")
+                        st.dataframe(stats['value_counts'])
+        else:
+            st.info("Brak kolumn kategorycznych w zbiorze danych.")
