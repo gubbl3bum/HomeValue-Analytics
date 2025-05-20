@@ -23,20 +23,7 @@ if uploaded_file:
 
     if df is not None:
         st.success(f"Plik został wczytany pomyślnie! Liczba wierszy: {row_count}")
-        
-        # Opcje transformacji danych
-        st.header("Transformacja danych")
-        
-        # Standaryzacja danych numerycznych
-        if st.checkbox("Standaryzacja danych numerycznych"):
-            df = scale_numeric_data(df)
-            st.success("Dane numeryczne zostały standaryzowane.")
-        
-        # Kodowanie kolumn kategorycznych
-        if st.checkbox("Kodowanie kolumn kategorycznych"):
-            df = encode_categorical_columns(df)
-            st.success("Kolumny kategoryczne zostały zakodowane.")
-        
+
         # Wyświetlanie i edycja podglądu danych
         st.header("Podgląd danych")
         df = preview_data(df)
