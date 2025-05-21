@@ -89,7 +89,7 @@ class ClassificationModel:
         self.model = RandomForestClassifier(**model_params)
         self.model.fit(X, y)
     
-    def evaluate(self, X, y, X_test=None, y_test=None, cv_folds=5):
+    def evaluate(self, X, y, X_test=None, y_test=None, cv_folds=5, use_loo=True):
         """
         Przeprowadza ewaluację modelu różnymi metodami.
         """
@@ -100,10 +100,11 @@ class ClassificationModel:
             cv_scores = cross_val_score(self.model, X, y, cv=cv_folds)
             results['cv_scores'] = cv_scores
             
-            # Leave-one-out validation
-            loo = LeaveOneOut()
-            loo_scores = cross_val_score(self.model, X, y, cv=loo)
-            results['loo_scores'] = loo_scores
+            # Leave-one-out validation (opcjonalnie)
+            if use_loo:
+                loo = LeaveOneOut()
+                loo_scores = cross_val_score(self.model, X, y, cv=loo)
+                results['loo_scores'] = loo_scores
             
             # Testowanie na zbiorze testowym
             if X_test is not None and y_test is not None:
@@ -271,14 +272,14 @@ def display_ml_ui(df):
         value=0.2,
         step=0.05
     )
-    
     cv_folds = st.number_input(
         "Liczba foldów walidacji krzyżowej",
         min_value=2,
         max_value=10,
         value=5
     )
-    
+    use_loo = st.checkbox("Użyj Leave-One-Out (LOO)", value=True)
+
     # Trenowanie i ewaluacja modelu
     if st.button("Trenuj model", use_container_width=True):
         with st.spinner("Trwa trenowanie modelu..."):
@@ -371,7 +372,8 @@ def display_ml_ui(df):
                 results = clf.evaluate(
                     X_train_encoded, y_train_encoded,
                     X_test_encoded, y_test_encoded,
-                    cv_folds
+                    cv_folds,
+                    use_loo=use_loo
                 )
                 
                 # Wyświetlanie wyników
@@ -388,10 +390,16 @@ def display_ml_ui(df):
                         f"±{results['cv_scores'].std():.3f}"
                     )
                 with col2:
-                    st.metric(
-                        "Średnia dokładność LOO",
-                        f"{results['loo_scores'].mean():.3f}"
-                    )
+                    if use_loo and 'loo_scores' in results:
+                        st.metric(
+                            "Średnia dokładność LOO",
+                            f"{results['loo_scores'].mean():.3f}"
+                        )
+                    else:
+                        st.metric(
+                            "Średnia dokładność LOO",
+                            "Wyłączone"
+                        )
                 with col3:
                     st.metric(
                         "Dokładność na zbiorze testowym",
