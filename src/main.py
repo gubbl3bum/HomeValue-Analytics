@@ -43,7 +43,7 @@ if uploaded_file:
         st.info(dataset_info)
 
         # Tworzymy zakładki dla różnych funkcjonalności
-        tab1, tab2, tab3 = st.tabs(["Statystyki", "Wizualizacje", "Machine Learning"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Statystyki", "Wizualizacje", "Machine Learning", "Przetwarzanie danych"])
 
         with tab1:
             # Tworzymy kolumny dla statystyk opisowych i kategorycznych
@@ -89,16 +89,27 @@ if uploaded_file:
             # Sekcja analizy machine learning
             display_ml_ui(working_df)
 
+        with tab4:
+            # Nowa zakładka: Przetwarzanie danych
+
             # Kodowanie
             st.subheader("Kodowanie kolumn symbolicznych")
-            column = st.selectbox("Kolumna do zakodowania", working_df.columns)
+            # Wyklucz 'id' z wyboru kolumn do kodowania
+            symbolic_cols = [col for col in working_df.columns if col.lower() != "id"]
+            column = st.selectbox("Kolumna do zakodowania", symbolic_cols)
             encoding_method = st.selectbox("Metoda kodowania", ["One-Hot", "Target"])
             if encoding_method == "One-Hot":
                 if st.button("Zakoduj One-Hot"):
                     working_df = one_hot_encode(working_df, column)
                     st.write(working_df)
             elif encoding_method == "Target":
-                target = st.selectbox("Kolumna docelowa", working_df.columns)
+                # Ogranicz wybór tylko do kolumn liczbowych, bez 'id'
+                numeric_cols = [col for col in working_df.select_dtypes(include=['number']).columns if col.lower() != "id"]
+                target = st.selectbox(
+                    "Kolumna docelowa",
+                    numeric_cols,
+                    help="Kolumna docelowa powinna być liczbowa. Target Encoding zamienia kategorie na średnią wartość tej kolumny w każdej grupie. Przykład: dla 'miasto' i 'cena', każda nazwa miasta zostanie zastąpiona średnią ceną domu w tym mieście."
+                )
                 if st.button("Zakoduj Target"):
                     working_df = target_encode(working_df, column, target)
                     st.write(working_df)
@@ -110,12 +121,4 @@ if uploaded_file:
             value = st.text_input("Nowa wartość")
             if st.button("Zamień wartości"):
                 working_df = replace_values(working_df, column, to_replace, value)
-                st.write(working_df)
-
-            # Ekstrakcja podtablic
-            st.subheader("Ekstrakcja podtablic")
-            mode = st.selectbox("Tryb ekstrakcji", ["remove", "keep"])
-            columns = st.multiselect("Kolumny do ekstrakcji", working_df.columns, key="extract_columns")
-            if st.button("Ekstraktuj podtablicę"):
-                working_df = extract_subtable(working_df, columns, mode)
                 st.write(working_df)
